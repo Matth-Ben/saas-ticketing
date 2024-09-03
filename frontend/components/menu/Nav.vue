@@ -5,6 +5,7 @@
             <Breadcrumbs />
         </div>
         <div class="flex items-center gap-[1.6rem]">
+            <ToolSearch />
             <font-awesome icon="sun" />
             <font-awesome icon="bell" />
         </div>

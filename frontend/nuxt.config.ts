@@ -2,11 +2,17 @@
 export default defineNuxtConfig({
   compatibilityDate: '2024-04-03',
   devtools: { enabled: true },
-  modules: ["@nuxtjs/tailwindcss", "@nuxtjs/color-mode", '@vesp/nuxt-fontawesome'],
+  modules: ["@nuxtjs/tailwindcss", "@nuxtjs/color-mode", '@vesp/nuxt-fontawesome', '@nuxt/ui'],
   darkMode: 'selector',
   ssr: true,
   component: 'fa',
   suffix: true,
+  experimental: {
+    search: true
+  },
+  ui: {
+    global: true
+  },
   fontawesome: {
     icons: {
       solid: ['window-maximize', 'bell', 'sun', 'moon', 'caret-up', 'caret-down']
