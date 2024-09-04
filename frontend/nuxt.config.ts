@@ -15,7 +15,7 @@ export default defineNuxtConfig({
   },
   fontawesome: {
     icons: {
-      solid: ['window-maximize', 'bell', 'sun', 'moon', 'caret-up', 'caret-down']
+      solid: ['window-maximize', 'bell', 'sun', 'moon', 'caret-up', 'caret-down', 'magnifying-glass']
     }
   },
   tailwindcss: {
