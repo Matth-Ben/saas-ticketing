@@ -14,6 +14,7 @@
     "@nuxtjs/color-mode": "^3.4.4",
     "@nuxtjs/tailwindcss": "^6.12.1",
     "@vesp/nuxt-fontawesome": "^1.1.0",
+    "graphql-request": "^7.1.0",
     "nuxt": "^3.12.4",
     "vue": "latest"
   },
