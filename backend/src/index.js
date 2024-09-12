@@ -1,26 +1,28 @@
-const express = require('express');
 const { ApolloServer } = require('apollo-server-express');
-const typeDefs = require('./schemas/schema.graphql');
+const express = require('express');
+const { loadSchemaSync } = require('@graphql-tools/load');
+const { GraphQLFileLoader } = require('@graphql-tools/graphql-file-loader');
 const resolvers = require('./resolvers');
 const connectDB = require('../config/db');
-const authMiddleware = require('../middlewares/authMiddleware');
-require('dotenv').config();
+
+const typeDefs = loadSchemaSync('./src/schemas/schema.graphql', {
+  loaders: [new GraphQLFileLoader()],
+});
 
 const app = express();
 
-// Connecter à la base de données
-connectDB();
+async function startServer() {
+  const server = new ApolloServer({ typeDefs, resolvers });
 
-// Utiliser les middlewares
-app.use(authMiddleware);
+  await server.start(); // Démarre le serveur Apollo
 
-// Configurer Apollo Server
-const server = new ApolloServer({ typeDefs, resolvers });
-server.start().then(res => {
   server.applyMiddleware({ app });
 
-  // Démarrer le serveur
-  app.listen({ port: 4000 }, () =>
-    console.log(`🚀 Server ready at http://localhost:4000${server.graphqlPath}`)
-  );
-});
+  connectDB(); // Connexion à MongoDB
+
+  app.listen({ port: 4000 }, () => {
+    console.log(`🚀 Server ready at http://localhost:4000${server.graphqlPath}`);
+  });
+}
+
+startServer(); // Appelle la fonction asynchrone pour démarrer le serveur
