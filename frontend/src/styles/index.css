@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans antialiased;
+  }
+}
+
+@layer utilities {
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-slideDown {
+    animation: slideDown 0.2s ease-out;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-4 py-2 bg-secondary-300 text-primary-900 font-semibold rounded-lg hover:bg-secondary-400 transition-colors shadow-sm;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors;
+  }
+
+  .card {
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700;
+  }
+
+  /* Styles pour l'éditeur de description */
+  .description-editor .ql-toolbar {
+    @apply border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 rounded-t-lg;
+  }
+
+  .description-editor .ql-container {
+    @apply border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-b-lg;
+    min-height: 120px;
+  }
+
+  .description-editor .ql-editor {
+    @apply text-gray-900 dark:text-white;
+    min-height: 120px;
+  }
+
+  .description-editor .ql-editor.ql-blank::before {
+    @apply text-gray-400 dark:text-gray-500 italic;
+  }
+
+  /* Styles pour la preview de description */
+  .description-preview {
+    @apply text-gray-700 dark:text-gray-300;
+  }
+
+  .description-preview p {
+    @apply mb-2;
+  }
+
+  .description-preview ul,
+  .description-preview ol {
+    @apply ml-4 mb-2;
+  }
+
+  .description-preview li {
+    @apply mb-1;
+  }
+
+  .description-preview strong {
+    @apply font-semibold text-gray-900 dark:text-white;
+  }
+
+  .description-preview em {
+    @apply italic;
+  }
+
+  .description-preview code {
+    @apply bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm;
+  }
+
+  .description-preview blockquote {
+    @apply border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic text-gray-600 dark:text-gray-400;
+  }
+
+  .description-preview a {
+    @apply text-secondary-600 hover:text-secondary-700 underline;
+  }
+
+  /* Styles pour la preview compacte dans les cartes Kanban */
+  .description-preview-compact {
+    @apply overflow-hidden;
+  }
+
+  .description-preview-compact p {
+    @apply mb-1 leading-tight;
+  }
+
+  .description-preview-compact ul,
+  .description-preview-compact ol {
+    @apply ml-3 mb-1;
+  }
+
+  .description-preview-compact li {
+    @apply mb-0.5;
+  }
+
+  .description-preview-compact strong,
+  .description-preview-compact em,
+  .description-preview-compact code {
+    @apply text-inherit;
+  }
+
+  .description-preview-compact blockquote,
+  .description-preview-compact pre {
+    @apply hidden;
+  }
+}
+
