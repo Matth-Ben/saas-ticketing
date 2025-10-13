@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Board } from '../../services/boardService'
 import { 
   Quote, 
@@ -16,11 +17,11 @@ interface QuoteViewProps {
 }
 
 function QuoteView({ board, onEditCard }: QuoteViewProps) {
+  const navigate = useNavigate()
   const [quotes, setQuotes] = useState<Quote[]>([])
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [showCreateModal, setShowCreateModal] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
   const [showGenerateModal, setShowGenerateModal] = useState(false)
 
@@ -41,19 +42,6 @@ function QuoteView({ board, onEditCard }: QuoteViewProps) {
     }
   }
 
-  const handleCreateQuote = async (quoteData: Partial<Quote>) => {
-    try {
-      const newQuote = await quoteService.create({
-        ...quoteData,
-        boardId: board.id,
-      })
-      setQuotes([newQuote, ...quotes])
-      setShowCreateModal(false)
-    } catch (err) {
-      console.error('Failed to create quote:', err)
-      setError('Erreur lors de la création du devis')
-    }
-  }
 
   const handleImportQuote = async (format: 'json' | 'csv', data: any) => {
     try {
@@ -140,7 +128,7 @@ function QuoteView({ board, onEditCard }: QuoteViewProps) {
               📥 Import
             </button>
             <button
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => navigate(`/project/${board.id}/quote/create`)}
               className="px-3 py-1.5 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
             >
               ➕ Nouveau
@@ -225,13 +213,6 @@ function QuoteView({ board, onEditCard }: QuoteViewProps) {
       </div>
 
       {/* Modals */}
-      {showCreateModal && (
-        <CreateQuoteModal
-          onClose={() => setShowCreateModal(false)}
-          onSubmit={handleCreateQuote}
-        />
-      )}
-
       {showImportModal && (
         <ImportQuoteModal
           onClose={() => setShowImportModal(false)}
@@ -607,118 +588,7 @@ function QuoteLineRow({ line, onUpdate, onDelete, onEditCard }: QuoteLineRowProp
   )
 }
 
-// Modal de création de devis
-interface CreateQuoteModalProps {
-  onClose: () => void
-  onSubmit: (data: Partial<Quote>) => void
-}
 
-function CreateQuoteModal({ onClose, onSubmit }: CreateQuoteModalProps) {
-  const [formData, setFormData] = useState<Partial<Quote>>({
-    title: '',
-    description: '',
-    clientName: '',
-    clientEmail: '',
-    clientAddress: '',
-    hourlyRate: 50,
-    margin: 20,
-    validUntil: '',
-  })
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSubmit(formData)
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-lg font-semibold mb-4">Créer un nouveau devis</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Titre *
-            </label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Nom du client *
-            </label>
-            <input
-              type="text"
-              value={formData.clientName}
-              onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Email du client
-            </label>
-            <input
-              type="email"
-              value={formData.clientEmail}
-              onChange={(e) => setFormData({ ...formData, clientEmail: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Taux horaire (€)
-              </label>
-              <input
-                type="number"
-                value={formData.hourlyRate}
-                onChange={(e) => setFormData({ ...formData, hourlyRate: parseFloat(e.target.value) || 0 })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                min="0"
-                step="0.01"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Marge (%)
-              </label>
-              <input
-                type="number"
-                value={formData.margin}
-                onChange={(e) => setFormData({ ...formData, margin: parseFloat(e.target.value) || 0 })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                min="0"
-                max="100"
-                step="0.01"
-              />
-            </div>
-          </div>
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-            >
-              Créer
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
 
 // Modal d'import de devis
 interface ImportQuoteModalProps {

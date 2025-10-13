@@ -6,6 +6,7 @@ import Boards from './pages/Boards'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
 import ProjectSettings from './pages/ProjectSettings'
+import CreateQuote from './pages/CreateQuote'
 
 function App() {
   const { theme } = useThemeStore()
@@ -21,6 +22,7 @@ function App() {
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/project/:id/settings" element={<ProjectSettings />} />
+            <Route path="/project/:boardId/quote/create" element={<CreateQuote />} />
           </Routes>
         </Router>
       </div>

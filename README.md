@@ -8,13 +8,16 @@ Un système de gestion de projet moderne destiné aux freelances, agences et che
 
 ### Fonctionnalités principales
 
-- 📊 **Kanban interactif** avec drag & drop
-- 📅 **Timeline** (vue Gantt simplifiée)
-- ⏱️ **Time Tracker** pour le suivi du temps
-- 💰 **Générateur de devis** et analyse de rentabilité
-- 📐 **Templates de projets** réutilisables
-- 👥 **Gestion multi-utilisateur** et multi-projet
-- 📈 **Rapports détaillés** avec graphiques
+- 📊 **Kanban interactif** avec drag & drop et colonnes personnalisables
+- ⏱️ **Time Tracker** intégré avec sessions détaillées et rapports
+- 💰 **Système de devis complet** avec rendu en temps réel et export PDF
+- 📈 **Analyse de rentabilité** avec graphiques et statistiques avancées
+- 🏢 **Gestion d'entreprise** avec paramètres complets (SIRET, TVA, logo)
+- 👤 **Association client-projet** avec informations automatiques
+- 📋 **5 vues de projet** : Résumé, Kanban, Liste, Temps, Devis
+- 📐 **Templates de projets** réutilisables (à venir)
+- 👥 **Gestion multi-utilisateur** et multi-projet (à venir)
+- 🎨 **Interface moderne** avec thème clair/sombre et design responsive
 
 ## 🏗️ Architecture
 
@@ -135,6 +138,7 @@ npm run dev:backend
 - Sequelize ORM
 - JWT (authentification)
 - Helmet & CORS (sécurité)
+- Docker & Docker Compose
 
 ## 📖 Documentation
 
@@ -170,12 +174,49 @@ L'application supporte les thèmes clair et sombre. Le thème est persisté dans
 - `npm run lint` - Linter le code
 - `npm run format` - Formater le code
 
+## 🔗 API Endpoints
+
+### Devis & Rentabilité
+- `GET /api/quote/board/:boardId` - Récupérer les devis d'un projet
+- `POST /api/quote` - Créer un nouveau devis
+- `PUT /api/quote/:id` - Mettre à jour un devis
+- `DELETE /api/quote/:id` - Supprimer un devis
+- `POST /api/quote/board/:boardId/generate` - Générer un devis depuis les tâches
+- `POST /api/quote/board/:boardId/import` - Importer un devis (JSON/CSV)
+- `GET /api/quote/board/:boardId/profitability` - Statistiques de rentabilité
+- `GET /api/quote/board/:boardId/tasks` - Tâches disponibles pour devis
+
+### Paramètres d'entreprise
+- `GET /api/company-settings` - Récupérer les paramètres d'entreprise
+- `PUT /api/company-settings` - Mettre à jour les paramètres d'entreprise
+- `POST /api/company-settings/reset` - Réinitialiser les paramètres par défaut
+
+### Projets (avec informations client)
+- `GET /api/boards` - Liste des projets avec informations client
+- `POST /api/boards` - Créer un projet avec client
+- `PUT /api/boards/:id` - Mettre à jour un projet et ses informations client
+
+## 🛣️ Routes Frontend
+
+### Pages principales
+- `/` - Dashboard principal
+- `/boards` - Liste des projets
+- `/reports` - Rapports et statistiques
+- `/settings` - Paramètres d'entreprise
+
+### Pages de projet
+- `/project/:id` - Vue projet (5 onglets : Résumé, Kanban, Liste, Temps, Devis)
+- `/project/:id/settings` - Paramètres du projet et client
+
+### Pages de devis
+- `/project/:boardId/quote/create` - Création de devis avec rendu temps réel
+
 ## 🗺️ Roadmap
 
 - [x] Sprint 0 - Initialisation du projet
 - [x] Sprint 1 - Gestion du Kanban (Base)
 - [x] Sprint 2 - Gestion du temps et Timeline
-- [ ] Sprint 3 - Devis, coûts et rentabilité
+- [x] Sprint 3 - Devis, coûts et rentabilité
 - [ ] Sprint 4 - Templates de projets
 - [ ] Sprint 5 - Authentification & gestion d'équipe
 - [ ] Sprint 6 - Améliorations UX/UI & intégrations
@@ -189,15 +230,16 @@ Ce projet est privé et destiné à un usage personnel/professionnel.
 
 Matthias - [Kanban Time Tracker](https://github.com/Matth-Ben)
 
-## 🎯 Fonctionnalités actuelles (Sprint 1 + 2)
+## 🎯 Fonctionnalités actuelles (Sprint 1 + 2 + 3)
 
 ### Gestion de Projets
 
-#### 4 Vues disponibles
-- ✅ **📊 Vue Résumé** : Dashboard avec statistiques, progression, suivi temporel
+#### 5 Vues disponibles
+- ✅ **📊 Vue Résumé** : Dashboard avec statistiques, progression, suivi temporel et rentabilité
 - ✅ **📋 Vue Tableau** : Kanban visuel avec drag & drop
 - ✅ **📝 Vue Liste** : Tableau détaillé avec 13 colonnes triables
 - ✅ **⏱️ Vue Temps** : Suivi détaillé de toutes les sessions (style Clockify)
+- ✅ **💰 Vue Devis** : Gestion complète des devis et analyse de rentabilité
 
 ### Kanban Board (Vue Tableau)
 - ✅ Création et gestion de tableaux Kanban
@@ -271,13 +313,68 @@ Matthias - [Kanban Time Tracker](https://github.com/Matth-Ben)
 - ✅ **Comparaison estimé/réel** : Avec pourcentage et écart
 - ✅ **Affichage des pauses** : Info sur les pauses enregistrées
 
+### Devis & Rentabilité (Sprint 3) 💰
+
+#### Gestion des devis
+- ✅ **Création de devis** : Page complète avec rendu en temps réel (style Portail Auto-Entrepreneur)
+- ✅ **Génération automatique** : Depuis les tâches du projet avec sélection personnalisée
+- ✅ **Import de devis** : Format JSON et CSV avec création automatique des tâches
+- ✅ **Association client-projet** : Chaque projet peut avoir un client associé
+- ✅ **Paramètres d'entreprise** : Configuration complète (nom, adresse, SIRET, TVA, logo)
+- ✅ **Export PDF** : Génération de devis professionnels avec informations entreprise
+
+#### Création de devis avancée
+- ✅ **Interface complète** : Formulaire + aperçu en temps réel
+- ✅ **Apparence personnalisable** : Couleur du devis et logo
+- ✅ **Informations client** : Récupération automatique depuis le projet
+- ✅ **Produits et services** : Lignes dynamiques avec types (Tâche, Service, Matériel, Remise)
+- ✅ **Calculs automatiques** : Quantité × Prix, sous-total, marge, total HT
+- ✅ **Conditions de livraison** : Délais, mode, adresse
+- ✅ **Conditions de paiement** : Délais, mode, acompte, coordonnées bancaires
+
+#### Vue Devis
+- ✅ **Liste des devis** : Tous les devis du projet avec statuts
+- ✅ **Détails complets** : Modal avec toutes les informations et lignes
+- ✅ **Statuts** : Brouillon, Envoyé, Accepté, Rejeté, Facturé
+- ✅ **Actions** : Édition, suppression, export PDF
+- ✅ **Filtrage** : Par statut et période
+
+#### Analyse de rentabilité
+- ✅ **Graphiques de rentabilité** : Comparaison estimé vs réel par devis
+- ✅ **Statistiques globales** : Montants totaux, rentabilité moyenne, nombre de devis
+- ✅ **État des devis** : Cartes individuelles avec progression visuelle
+- ✅ **Tableau détaillé** : Analyse complète avec statuts et marges
+- ✅ **Indicateurs de performance** : Rentabilité par devis avec codes couleur
+
+#### Paramètres d'entreprise
+- ✅ **Page dédiée** : Configuration complète des informations entreprise
+- ✅ **Informations générales** : Nom, adresse, ville, code postal, pays
+- ✅ **Contact** : Téléphone, email, site web
+- ✅ **Informations légales** : SIRET, numéro de TVA
+- ✅ **Paramètres par défaut** : Taux horaire, marge, devise, langue
+- ✅ **Aperçu en temps réel** : Visualisation des informations formatées
+- ✅ **Validation** : Contrôles de saisie et messages d'erreur
+
+#### Paramètres de projet
+- ✅ **Page dédiée** : Configuration du projet et du client associé
+- ✅ **Informations projet** : Nom, description, couleur
+- ✅ **Informations client** : Nom, email, téléphone, adresse
+- ✅ **Aperçu** : Visualisation des informations projet + client
+- ✅ **Intégration devis** : Utilisation automatique des informations client
+
+#### Intégrations
+- ✅ **Association tâches-devis** : Lignes de devis liées aux cartes du projet
+- ✅ **Calcul temps réel** : Heures réelles calculées depuis les TimeEntries
+- ✅ **Suivi de progression** : Avancement des devis vs temps passé
+- ✅ **Export PDF professionnel** : Devis avec en-tête entreprise et informations légales
+
 ### Pour tester
 
 #### Gestion de base
 1. Démarrer le projet avec `npm run dev`
 2. Aller sur http://localhost:3000/boards (maintenant "Projets")
 3. Créer un projet avec le bouton "➕ Nouveau projet"
-4. Choisir une vue : 📊 Résumé / 📋 Tableau / 📝 Liste / ⏱️ Temps
+4. Choisir une vue : 📊 Résumé / 📋 Tableau / 📝 Liste / ⏱️ Temps / 💰 Devis
 
 #### Vue Tableau (Kanban)
 5. Drag & drop des cartes entre colonnes
@@ -301,9 +398,23 @@ Matthias - [Kanban Time Tracker](https://github.com/Matth-Ben)
 17. Voir les graphiques et statistiques
 18. Exporter en CSV avec le bouton "📥 Exporter CSV"
 
+#### Devis & Rentabilité
+19. Aller dans l'onglet "💰 Devis" d'un projet
+20. Cliquer sur "➕ Nouveau" pour créer un devis avec rendu en temps réel
+21. Configurer les paramètres d'entreprise dans "⚙️ Paramètres" (menu principal)
+22. Configurer les informations client dans "⚙️ Paramètres" du projet
+23. Utiliser "⚡ Auto" pour générer un devis depuis les tâches
+24. Voir les graphiques de rentabilité dans l'onglet "📊 Résumé"
+25. Exporter un devis en PDF avec le bouton "📄 PDF"
+
+#### Paramètres
+26. Aller dans "⚙️ Paramètres" (menu principal) pour configurer l'entreprise
+27. Aller dans "⚙️ Paramètres" d'un projet pour configurer le client
+28. Voir les aperçus en temps réel des informations
+
 Voir [TEST_DATA.md](./TEST_DATA.md) et [INSTALLATION.md](./INSTALLATION.md) pour plus de détails.
 
 ---
 
-**Note :** Sprint 1 & 2 terminés ! Le Kanban et le Time Tracking sont pleinement fonctionnels. Prochains sprints : Devis & coûts, puis Templates de projets.
+**Note :** Sprint 1, 2 & 3 terminés ! Le Kanban, Time Tracking et système de Devis sont pleinement fonctionnels. Prochain sprint : Templates de projets.
 
