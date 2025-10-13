@@ -7,6 +7,10 @@ export interface Board {
   color?: string
   columns: string[]
   columnColors: { [key: string]: string }
+  clientName?: string
+  clientEmail?: string
+  clientAddress?: string
+  clientPhone?: string
   cards?: Card[]
   createdAt: string
   updatedAt: string

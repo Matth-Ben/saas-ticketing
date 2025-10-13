@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard'
 import Boards from './pages/Boards'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
+import ProjectSettings from './pages/ProjectSettings'
 
 function App() {
   const { theme } = useThemeStore()
@@ -19,6 +20,7 @@ function App() {
             <Route path="/boards" element={<Boards />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/project/:id/settings" element={<ProjectSettings />} />
           </Routes>
         </Router>
       </div>

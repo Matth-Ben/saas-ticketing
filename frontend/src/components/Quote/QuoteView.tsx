@@ -241,7 +241,7 @@ function QuoteView({ board, onEditCard }: QuoteViewProps) {
 
       {showGenerateModal && (
         <GenerateQuoteModal
-          boardId={board.id}
+          board={board}
           onClose={() => setShowGenerateModal(false)}
           onSubmit={handleGenerateFromTasks}
         />
@@ -801,12 +801,12 @@ function ImportQuoteModal({ onClose, onSubmit }: ImportQuoteModalProps) {
 
 // Modal de génération automatique
 interface GenerateQuoteModalProps {
-  boardId: string
+  board: Board
   onClose: () => void
   onSubmit: (options: { hourlyRate: number; margin: number; includeCompleted?: boolean; selectedCardIds?: string[]; title?: string; clientName?: string }) => void
 }
 
-function GenerateQuoteModal({ boardId, onClose, onSubmit }: GenerateQuoteModalProps) {
+function GenerateQuoteModal({ board, onClose, onSubmit }: GenerateQuoteModalProps) {
   const [hourlyRate, setHourlyRate] = useState(50)
   const [margin, setMargin] = useState(20)
   const [includeCompleted, setIncludeCompleted] = useState(false)
@@ -833,10 +833,17 @@ function GenerateQuoteModal({ boardId, onClose, onSubmit }: GenerateQuoteModalPr
     }
   }
 
+  // Utiliser le nom du projet comme client par défaut
+  useEffect(() => {
+    if (board.name && !clientName) {
+      setClientName(board.name)
+    }
+  }, [board.name, clientName])
+
   const loadAvailableTasks = async () => {
     try {
       setLoading(true)
-      const tasks = await quoteService.getAvailableTasks(boardId, includeCompleted)
+      const tasks = await quoteService.getAvailableTasks(board.id, includeCompleted)
       setAvailableTasks(tasks)
       // Sélectionner toutes les tâches par défaut
       setSelectedTasks(tasks.map((task: any) => task.id))
@@ -905,6 +912,11 @@ function GenerateQuoteModal({ boardId, onClose, onSubmit }: GenerateQuoteModalPr
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="Ex: Client ABC"
               />
+              {board.clientName && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  💡 Client associé au projet: {board.clientName}
+                </p>
+              )}
             </div>
           </div>
 

@@ -12,11 +12,15 @@ interface BoardAttributes {
   color?: string
   columns: string[]
   columnColors: ColumnColors
+  clientName?: string
+  clientEmail?: string
+  clientAddress?: string
+  clientPhone?: string
   createdAt?: Date
   updatedAt?: Date
 }
 
-interface BoardCreationAttributes extends Optional<BoardAttributes, 'id' | 'description' | 'color' | 'columnColors'> {}
+interface BoardCreationAttributes extends Optional<BoardAttributes, 'id' | 'description' | 'color' | 'columnColors' | 'clientName' | 'clientEmail' | 'clientAddress' | 'clientPhone'> {}
 
 class Board extends Model<BoardAttributes, BoardCreationAttributes> implements BoardAttributes {
   declare id: string
@@ -25,6 +29,10 @@ class Board extends Model<BoardAttributes, BoardCreationAttributes> implements B
   declare color?: string
   declare columns: string[]
   declare columnColors: ColumnColors
+  declare clientName?: string
+  declare clientEmail?: string
+  declare clientAddress?: string
+  declare clientPhone?: string
   declare readonly createdAt: Date
   declare readonly updatedAt: Date
 }
@@ -69,6 +77,29 @@ Board.init(
         'In Progress': '#fbbf24', // Jaune/Orange
         'Done': '#a8ff99',        // Vert (notre couleur secondaire)
       },
+    },
+    clientName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Nom du client associé au projet',
+    },
+    clientEmail: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      validate: {
+        isEmail: true,
+      },
+      comment: 'Email du client',
+    },
+    clientAddress: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: 'Adresse du client',
+    },
+    clientPhone: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Téléphone du client',
     },
   },
   {
