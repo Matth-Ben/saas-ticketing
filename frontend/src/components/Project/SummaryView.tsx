@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Board, Card } from '../../services/boardService'
 import { timeService, TimeEntry } from '../../services/timeService'
+import ProfitabilityChart from '../Quote/ProfitabilityChart'
 
 interface SummaryViewProps {
   board: Board
@@ -322,6 +323,12 @@ function SummaryView({ board, cards }: SummaryViewProps) {
               </div>
             ))}
         </div>
+      </div>
+
+      {/* Graphique de rentabilité */}
+      <div className="card">
+        <h2 className="text-lg font-semibold mb-4">💰 Rentabilité des Devis</h2>
+        <ProfitabilityChart board={board} />
       </div>
     </div>
   )

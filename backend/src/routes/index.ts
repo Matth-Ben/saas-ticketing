@@ -6,6 +6,8 @@ import commentRoutes from './comments.js'
 import historyRoutes from './history.js'
 import authRoutes from './auth.js'
 import timeRoutes from './time.js'
+import quoteRoutes from './quote.js'
+import companySettingsRoutes from './companySettings.js'
 
 const router = Router()
 
@@ -17,6 +19,8 @@ router.use('/subtasks', subtaskRoutes)
 router.use('/comments', commentRoutes)
 router.use('/history', historyRoutes)
 router.use('/time', timeRoutes)
+router.use('/quote', quoteRoutes)
+router.use('/company-settings', companySettingsRoutes)
 
 // Route de test
 router.get('/test', (_req, res) => {

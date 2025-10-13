@@ -4,6 +4,9 @@ import Card from './Card.js'
 import Comment from './Comment.js'
 import History from './History.js'
 import TimeEntry from './TimeEntry.js'
+import Quote from './Quote.js'
+import QuoteLine from './QuoteLine.js'
+import CompanySettings from './CompanySettings.js'
 
 // Relations entre les modèles
 Board.hasMany(Card, {
@@ -65,7 +68,42 @@ TimeEntry.belongsTo(Card, {
   as: 'card',
 })
 
-export { sequelize, Board, Card, Comment, History, TimeEntry }
+// Relations pour les devis
+Board.hasMany(Quote, {
+  foreignKey: 'boardId',
+  as: 'quotes',
+  onDelete: 'CASCADE',
+})
+
+Quote.belongsTo(Board, {
+  foreignKey: 'boardId',
+  as: 'board',
+})
+
+Quote.hasMany(QuoteLine, {
+  foreignKey: 'quoteId',
+  as: 'lines',
+  onDelete: 'CASCADE',
+})
+
+QuoteLine.belongsTo(Quote, {
+  foreignKey: 'quoteId',
+  as: 'quote',
+})
+
+// Relation optionnelle entre QuoteLine et Card
+QuoteLine.belongsTo(Card, {
+  foreignKey: 'cardId',
+  as: 'card',
+})
+
+Card.hasMany(QuoteLine, {
+  foreignKey: 'cardId',
+  as: 'quoteLines',
+  onDelete: 'SET NULL',
+})
+
+export { sequelize, Board, Card, Comment, History, TimeEntry, Quote, QuoteLine, CompanySettings }
 
 export default {
   sequelize,
@@ -74,4 +112,7 @@ export default {
   Comment,
   History,
   TimeEntry,
+  Quote,
+  QuoteLine,
+  CompanySettings,
 }

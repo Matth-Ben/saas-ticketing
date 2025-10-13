@@ -4,6 +4,7 @@ import SummaryView from './SummaryView'
 import KanbanBoard from '../Kanban/KanbanBoard'
 import ListView from './ListView'
 import TimeTrackerView from '../TimeTracker/TimeTrackerView'
+import QuoteView from '../Quote/QuoteView'
 
 interface ProjectViewProps {
   board: Board
@@ -11,7 +12,7 @@ interface ProjectViewProps {
   onEditCard: (card: Card) => void
 }
 
-type ViewType = 'summary' | 'kanban' | 'list' | 'timetracker'
+type ViewType = 'summary' | 'kanban' | 'list' | 'timetracker' | 'quotes'
 
 function ProjectView({ board, onRefresh, onEditCard }: ProjectViewProps) {
   const [activeView, setActiveView] = useState<ViewType>('kanban')
@@ -42,6 +43,7 @@ function ProjectView({ board, onRefresh, onEditCard }: ProjectViewProps) {
     { id: 'kanban', label: '📋 Tableau', icon: '📋' },
     { id: 'list', label: '📝 Liste', icon: '📝' },
     { id: 'timetracker', label: '⏱️ Temps', icon: '⏱️' },
+    { id: 'quotes', label: '💰 Devis', icon: '💰' },
   ]
 
   return (
@@ -100,6 +102,12 @@ function ProjectView({ board, onRefresh, onEditCard }: ProjectViewProps) {
         {activeView === 'timetracker' && (
           <div className="h-full overflow-y-auto p-6">
             <TimeTrackerView board={board} onEditCard={onEditCard} />
+          </div>
+        )}
+
+        {activeView === 'quotes' && (
+          <div className="h-full overflow-y-auto p-6">
+            <QuoteView board={board} onEditCard={onEditCard} />
           </div>
         )}
       </div>
