@@ -91,7 +91,7 @@ function Reports() {
   };
 
   return (
-    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="h-full max-h-full overflow-auto p-6 bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto">
         {/* En-tête */}
         <div className="flex items-center justify-between mb-6">

@@ -49,9 +49,9 @@ function ProjectView({ board, onRefresh, onEditCard }: ProjectViewProps) {
   ]
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full max-h-full flex flex-col">
       {/* Barre d'onglets */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3 flex-shrink-0">
         <div className="flex items-center justify-between">
           <nav className="flex gap-2">
             {tabs.map((tab) => (
@@ -79,7 +79,7 @@ function ProjectView({ board, onRefresh, onEditCard }: ProjectViewProps) {
       </div>
 
       {/* Contenu de la vue active */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden min-h-0">
         {activeView === 'summary' && (
           <div className="h-full overflow-y-auto p-6">
             {loading ? (

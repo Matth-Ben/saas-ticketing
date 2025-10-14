@@ -71,7 +71,8 @@ function ProjectSettings() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="h-full max-h-full overflow-auto">
+      <div className="max-w-4xl mx-auto p-6">
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-2">
           <button
@@ -285,6 +286,7 @@ function ProjectSettings() {
           </button>
         </div>
       </form>
+      </div>
     </div>
   )
 }
