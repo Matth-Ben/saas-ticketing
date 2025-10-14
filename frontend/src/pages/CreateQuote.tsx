@@ -2,17 +2,27 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Board, boardService } from '../services/boardService'
 import { companySettingsService, CompanySettings } from '../services/companySettingsService'
-import { quoteService, Quote, QuoteLine, QuoteLineType } from '../services/quoteService'
+import { quoteService, QuoteLineType } from '../services/quoteService'
 
 function CreateQuote() {
   const { boardId } = useParams<{ boardId: string }>()
   const navigate = useNavigate()
-  const [board, setBoard] = useState<Board | null>(null)
+  const [, setBoard] = useState<Board | null>(null)
   const [companySettings, setCompanySettings] = useState<CompanySettings | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  
+  // État des sections ouvertes/fermées
+  const [openSections, setOpenSections] = useState({
+    appearance: false,
+    quoteInfo: false,
+    clientInfo: false,
+    products: false,
+    financial: false,
+    delivery: false
+  })
 
   // État du devis
   const [quote, setQuote] = useState({
@@ -68,6 +78,139 @@ function CreateQuote() {
     bankDetails: '',
   })
 
+  // Listes prédéfinies pour les dropdowns
+  const deliveryTimes = [
+    '7 jours',
+    '15 jours',
+    '30 jours',
+    '45 jours',
+    '60 jours',
+    '90 jours',
+    'Sur mesure'
+  ]
+
+  const deliveryMethods = [
+    'Livraison par email',
+    'Livraison en main propre',
+    'Livraison par courrier',
+    'Livraison par transporteur',
+    'Téléchargement',
+    'Sur site client'
+  ]
+
+  const paymentTerms = [
+    'À la commande',
+    '7 jours',
+    '15 jours',
+    '30 jours',
+    '45 jours',
+    '60 jours',
+    '90 jours'
+  ]
+
+  const paymentMethods = [
+    'Virement bancaire',
+    'Chèque',
+    'Espèces',
+    'Carte bancaire',
+    'PayPal',
+    'Stripe',
+    'Prélèvement automatique'
+  ]
+
+  const advancePayments = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+
+  const commonServices = [
+    'Développement web',
+    'Développement mobile',
+    'Design UI/UX',
+    'Intégration API',
+    'Maintenance',
+    'Formation',
+    'Consulting',
+    'Audit technique',
+    'Optimisation SEO',
+    'Hébergement',
+    'Support technique',
+    'Migration de données'
+  ]
+
+  const commonMaterials = [
+    'Licence logiciel',
+    'Hébergement web',
+    'Nom de domaine',
+    'Certificat SSL',
+    'Template premium',
+    'Plugin/Extension',
+    'API tierce',
+    'Matériel informatique'
+  ]
+
+  const categories = [
+    'Développement',
+    'Design',
+    'Marketing',
+    'Formation',
+    'Maintenance',
+    'Consulting',
+    'Infrastructure',
+    'Sécurité',
+    'Performance',
+    'Migration',
+    'Intégration',
+    'Support'
+  ]
+
+  // Listes prédéfinies pour toutes les sections
+
+  const quoteTitles = [
+    'Développement de site web',
+    'Application mobile',
+    'Refonte de site web',
+    'Maintenance et support',
+    'Formation utilisateurs',
+    'Audit technique',
+    'Migration de données',
+    'Intégration API',
+    'Optimisation SEO',
+    'Design UI/UX',
+    'Consulting stratégique',
+    'Hébergement et infrastructure'
+  ]
+
+  const clientNames = [
+    'Entreprise ABC',
+    'Startup Tech',
+    'Agence Marketing',
+    'Commerce en ligne',
+    'Association',
+    'Freelance',
+    'PME',
+    'Grande entreprise',
+    'Collectivité',
+    'Particulier'
+  ]
+
+  const hourlyRates = [
+    25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100,
+    110, 120, 130, 140, 150, 160, 170, 180, 190, 200
+  ]
+
+  const margins = [
+    0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50
+  ]
+
+  const validUntilOptions = [
+    '7 jours',
+    '15 jours',
+    '30 jours',
+    '45 jours',
+    '60 jours',
+    '90 jours',
+    '6 mois',
+    '1 an'
+  ]
+
   useEffect(() => {
     loadData()
   }, [boardId])
@@ -117,6 +260,10 @@ function CreateQuote() {
 
   const handleQuoteChange = (field: string, value: any) => {
     setQuote(prev => ({ ...prev, [field]: value }))
+  }
+
+  const toggleSection = (section: keyof typeof openSections) => {
+    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }))
   }
 
   const handleLineChange = (id: string, field: string, value: any) => {
@@ -260,61 +407,245 @@ function CreateQuote() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-8 gap-8">
+          {/* Aperçu en temps réel */}
+          <div className="col-span-5 lg:sticky lg:top-6">
+            <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-6 bg-white">
+              {/* En-tête */}
+              <div className="flex items-center justify-between mb-6 pb-4 border-b-2" style={{ borderColor: quote.color }}>
+                <div className="flex items-center gap-4">
+                  {quote.logo && (
+                    <img src={quote.logo} alt="Logo" className="h-12 w-auto" />
+                  )}
+                  <div>
+                    <h1 className="text-xl font-bold text-gray-900">
+                      {companySettings?.name || 'Votre Entreprise'}
+                    </h1>
+                    {companySettings && (
+                      <p className="text-sm text-gray-600">
+                        {companySettingsService.formatFullAddress(companySettings)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold" style={{ color: quote.color }}>
+                    DEVIS
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {new Date().toLocaleDateString('fr-FR')}
+                  </div>
+                </div>
+              </div>
+
+              {/* Informations du devis */}
+              <div className="mb-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">
+                  {quote.title || 'Titre du devis'}
+                </h2>
+                {quote.description && (
+                  <p className="text-gray-600 mb-4">{quote.description}</p>
+                )}
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="font-medium text-gray-900 mb-2">Client</h3>
+                    <p className="text-gray-600">{quote.clientName || 'Nom du client'}</p>
+                    {quote.clientEmail && <p className="text-gray-600">{quote.clientEmail}</p>}
+                    {quote.clientPhone && <p className="text-gray-600">{quote.clientPhone}</p>}
+                    {quote.clientAddress && <p className="text-gray-600">{quote.clientAddress}</p>}
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-900 mb-2">Validité</h3>
+                    <p className="text-gray-600">
+                      {quote.validUntil 
+                        ? new Date(quote.validUntil).toLocaleDateString('fr-FR')
+                        : 'Non spécifiée'
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Lignes du devis */}
+              <div className="mb-6">
+                <h3 className="font-medium text-gray-900 mb-3">Prestations</h3>
+                <div className="space-y-2">
+                  {lines.map((line, index) => (
+                    <div key={line.id} className="flex items-center justify-between py-2 border-b border-gray-100">
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900">
+                          {line.title || `Ligne ${index + 1}`}
+                        </div>
+                        {line.description && (
+                          <div className="text-sm text-gray-600">{line.description}</div>
+                        )}
+                        <div className="text-sm text-gray-500">
+                          {line.quantity} × {quoteService.formatAmount(line.unitPrice)}
+                          {line.estimatedHours && ` (${quoteService.formatHours(line.estimatedHours)})`}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-medium text-gray-900">
+                          {quoteService.formatAmount(line.totalPrice)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Totaux */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-gray-600">Sous-total HT</span>
+                  <span className="font-medium">{quoteService.formatAmount(subtotal)}</span>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-gray-600">Marge ({quote.margin}%)</span>
+                  <span className="font-medium">{quoteService.formatAmount(totalWithMargin - subtotal)}</span>
+                </div>
+                <div className="flex items-center justify-between py-3 border-t-2 border-gray-200" style={{ borderColor: quote.color }}>
+                  <span className="text-lg font-semibold text-gray-900">Total HT</span>
+                  <span className="text-lg font-bold" style={{ color: quote.color }}>
+                    {quoteService.formatAmount(totalWithMargin)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Conditions */}
+              <div className="text-sm text-gray-600 space-y-1">
+                <p><strong>Livraison:</strong> {delivery.deliveryTime} - {delivery.deliveryMethod}</p>
+                <p><strong>Paiement:</strong> {payment.paymentTerms} - {payment.paymentMethod}</p>
+                {payment.advancePayment > 0 && (
+                  <p><strong>Acompte:</strong> {payment.advancePayment}% à la commande</p>
+                )}
+              </div>
+            </div>
+          </div>
+          
           {/* Formulaire de création */}
-          <div className="space-y-6">
+          <div className="col-span-3 space-y-6">
             {/* Informations générales */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                🎨 Apparence
-              </h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => toggleSection('appearance')}
+                className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+              >
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  🎨 Apparence
+                </h2>
+                <span className={`transform transition-transform ${openSections.appearance ? 'rotate-180' : ''}`}>
+                  ▼
+                </span>
+              </button>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {openSections.appearance && (
+                <div className="px-6 pb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Couleur du devis
                   </label>
-                  <input
-                    type="color"
-                    value={quote.color}
-                    onChange={(e) => handleQuoteChange('color', e.target.value)}
-                    className="w-full h-10 border border-gray-300 dark:border-gray-600 rounded-lg"
-                  />
+                  <div className="flex gap-2">
+                    <select
+                      value={quote.color}
+                      onChange={(e) => handleQuoteChange('color', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                      <option value="#3b82f6">🔵 Bleu (professionnel)</option>
+                      <option value="#10b981">🟢 Vert (naturel)</option>
+                      <option value="#f59e0b">🟡 Jaune (énergique)</option>
+                      <option value="#ef4444">🔴 Rouge (urgent)</option>
+                      <option value="#8b5cf6">🟣 Violet (créatif)</option>
+                      <option value="#06b6d4">🔵 Cyan (moderne)</option>
+                      <option value="#f97316">🟠 Orange (chaleureux)</option>
+                      <option value="#84cc16">🟢 Lime (frais)</option>
+                      <option value="#ec4899">🩷 Rose (élégant)</option>
+                      <option value="#6366f1">🟦 Indigo (professionnel)</option>
+                      <option value="#14b8a6">🟢 Teal (équilibré)</option>
+                      <option value="#f43f5e">🩷 Rose (dynamique)</option>
+                    </select>
+                    <input
+                      type="color"
+                      value={quote.color}
+                      onChange={(e) => handleQuoteChange('color', e.target.value)}
+                      className="w-12 h-10 border border-gray-300 dark:border-gray-600 rounded-lg"
+                      title="Couleur personnalisée"
+                    />
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Logo (URL)
                   </label>
-                  <input
-                    type="url"
-                    value={quote.logo}
-                    onChange={(e) => handleQuoteChange('logo', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="https://example.com/logo.png"
-                  />
+                  <div className="flex gap-2">
+                    <select
+                      value={quote.logo}
+                      onChange={(e) => handleQuoteChange('logo', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                      <option value="">Aucun logo</option>
+                      <option value="https://via.placeholder.com/150x50/3b82f6/ffffff?text=LOGO">Logo exemple 1</option>
+                      <option value="https://via.placeholder.com/150x50/10b981/ffffff?text=LOGO">Logo exemple 2</option>
+                      <option value="https://via.placeholder.com/150x50/f59e0b/ffffff?text=LOGO">Logo exemple 3</option>
+                    </select>
+                    <input
+                      type="url"
+                      value={quote.logo}
+                      onChange={(e) => handleQuoteChange('logo', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="URL personnalisée..."
+                    />
+                  </div>
                 </div>
-              </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Informations du devis */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                📋 Informations du devis
-              </h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => toggleSection('quoteInfo')}
+                className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+              >
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  📋 Informations du devis
+                </h2>
+                <span className={`transform transition-transform ${openSections.quoteInfo ? 'rotate-180' : ''}`}>
+                  ▼
+                </span>
+              </button>
               
-              <div className="space-y-4">
+              {openSections.quoteInfo && (
+                <div className="px-6 pb-6">
+                  <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Titre du devis *
                   </label>
-                  <input
-                    type="text"
-                    value={quote.title}
-                    onChange={(e) => handleQuoteChange('title', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    required
-                  />
+                  <div className="flex gap-2">
+                    <select
+                      value={quote.title}
+                      onChange={(e) => handleQuoteChange('title', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      required
+                    >
+                      <option value="">Sélectionner un titre...</option>
+                      {quoteTitles.map((title) => (
+                        <option key={title} value={title}>{title}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      value={quote.title}
+                      onChange={(e) => handleQuoteChange('title', e.target.value)}
+                      placeholder="Ou saisir manuellement..."
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -326,43 +657,128 @@ function CreateQuote() {
                     onChange={(e) => handleQuoteChange('description', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     rows={3}
+                    placeholder="Description détaillée du projet..."
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Validité jusqu'au
+                      Validité du devis
                     </label>
-                    <input
-                      type="date"
+                    <select
                       value={quote.validUntil}
-                      onChange={(e) => handleQuoteChange('validUntil', e.target.value)}
+                      onChange={(e) => {
+                        const selectedOption = e.target.value
+                        if (selectedOption === 'custom') {
+                          // Laisser l'utilisateur saisir une date personnalisée
+                          handleQuoteChange('validUntil', '')
+                        } else {
+                          // Calculer la date basée sur l'option sélectionnée
+                          const today = new Date()
+                          const validDate = new Date(today)
+                          
+                          switch (selectedOption) {
+                            case '7 jours':
+                              validDate.setDate(today.getDate() + 7)
+                              break
+                            case '15 jours':
+                              validDate.setDate(today.getDate() + 15)
+                              break
+                            case '30 jours':
+                              validDate.setDate(today.getDate() + 30)
+                              break
+                            case '45 jours':
+                              validDate.setDate(today.getDate() + 45)
+                              break
+                            case '60 jours':
+                              validDate.setDate(today.getDate() + 60)
+                              break
+                            case '90 jours':
+                              validDate.setDate(today.getDate() + 90)
+                              break
+                            case '6 mois':
+                              validDate.setMonth(today.getMonth() + 6)
+                              break
+                            case '1 an':
+                              validDate.setFullYear(today.getFullYear() + 1)
+                              break
+                            default:
+                              validDate.setDate(today.getDate() + 30)
+                          }
+                          
+                          handleQuoteChange('validUntil', validDate.toISOString().split('T')[0])
+                        }
+                      }}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    />
+                    >
+                      {validUntilOptions.map((option) => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                      <option value="custom">Date personnalisée</option>
+                    </select>
+                  </div>
+                  
+                  {quote.validUntil && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Date personnalisée
+                      </label>
+                      <input
+                        type="date"
+                        value={quote.validUntil}
+                        onChange={(e) => handleQuoteChange('validUntil', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                  )}
+                </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Informations du client */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                👤 Informations du client
-              </h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => toggleSection('clientInfo')}
+                className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+              >
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  👤 Informations du client
+                </h2>
+                <span className={`transform transition-transform ${openSections.clientInfo ? 'rotate-180' : ''}`}>
+                  ▼
+                </span>
+              </button>
               
-              <div className="space-y-4">
+              {openSections.clientInfo && (
+                <div className="px-6 pb-6">
+                  <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Nom du client *
                   </label>
-                  <input
-                    type="text"
-                    value={quote.clientName}
-                    onChange={(e) => handleQuoteChange('clientName', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    required
-                  />
+                  <div className="flex gap-2">
+                    <select
+                      value={quote.clientName}
+                      onChange={(e) => handleQuoteChange('clientName', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      required
+                    >
+                      <option value="">Sélectionner un client...</option>
+                      {clientNames.map((name) => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      value={quote.clientName}
+                      onChange={(e) => handleQuoteChange('clientName', e.target.value)}
+                      placeholder="Ou saisir manuellement..."
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -375,6 +791,7 @@ function CreateQuote() {
                       value={quote.clientEmail}
                       onChange={(e) => handleQuoteChange('clientEmail', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="client@example.com"
                     />
                   </div>
 
@@ -387,6 +804,7 @@ function CreateQuote() {
                       value={quote.clientPhone}
                       onChange={(e) => handleQuoteChange('clientPhone', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="+33 1 23 45 67 89"
                     />
                   </div>
                 </div>
@@ -400,27 +818,43 @@ function CreateQuote() {
                     onChange={(e) => handleQuoteChange('clientAddress', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     rows={3}
+                    placeholder="Adresse complète du client..."
                   />
                 </div>
-              </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Produits et services */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <div className="flex items-center justify-between mb-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => toggleSection('products')}
+                className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+              >
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                   🛍️ Produits et services
                 </h2>
-                <button
-                  type="button"
-                  onClick={addLine}
-                  className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  + Ajouter
-                </button>
-              </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      addLine()
+                    }}
+                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    + Ajouter
+                  </button>
+                  <span className={`transform transition-transform ${openSections.products ? 'rotate-180' : ''}`}>
+                    ▼
+                  </span>
+                </div>
+              </button>
               
-              <div className="space-y-4">
+              {openSections.products && (
+                <div className="px-6 pb-6">
+                  <div className="space-y-4">
                 {lines.map((line, index) => (
                   <div key={line.id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-3">
@@ -459,12 +893,16 @@ function CreateQuote() {
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Catégorie
                         </label>
-                        <input
-                          type="text"
+                        <select
                           value={line.category}
                           onChange={(e) => handleLineChange(line.id, 'category', e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        />
+                        >
+                          <option value="">Sélectionner une catégorie...</option>
+                          {categories.map((category) => (
+                            <option key={category} value={category}>{category}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
 
@@ -472,13 +910,44 @@ function CreateQuote() {
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Titre *
                       </label>
-                      <input
-                        type="text"
-                        value={line.title}
-                        onChange={(e) => handleLineChange(line.id, 'title', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                        required
-                      />
+                      <div className="flex gap-2">
+                        <select
+                          value={line.title}
+                          onChange={(e) => handleLineChange(line.id, 'title', e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          required
+                        >
+                          <option value="">Sélectionner un service...</option>
+                          {line.type === QuoteLineType.SERVICE && commonServices.map((service) => (
+                            <option key={service} value={service}>{service}</option>
+                          ))}
+                          {line.type === QuoteLineType.MATERIAL && commonMaterials.map((material) => (
+                            <option key={material} value={material}>{material}</option>
+                          ))}
+                          {line.type === QuoteLineType.TASK && (
+                            <>
+                              {commonServices.map((service) => (
+                                <option key={service} value={service}>{service}</option>
+                              ))}
+                            </>
+                          )}
+                          {line.type === QuoteLineType.DISCOUNT && (
+                            <>
+                              <option value="Remise commerciale">Remise commerciale</option>
+                              <option value="Remise fidélité">Remise fidélité</option>
+                              <option value="Remise volume">Remise volume</option>
+                              <option value="Remise early bird">Remise early bird</option>
+                            </>
+                          )}
+                        </select>
+                        <input
+                          type="text"
+                          value={line.title}
+                          onChange={(e) => handleLineChange(line.id, 'title', e.target.value)}
+                          placeholder="Ou saisir manuellement..."
+                          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        />
+                      </div>
                     </div>
 
                     <div className="mt-3">
@@ -498,42 +967,102 @@ function CreateQuote() {
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Quantité
                         </label>
-                        <input
-                          type="number"
-                          value={line.quantity}
-                          onChange={(e) => handleLineChange(line.id, 'quantity', parseFloat(e.target.value) || 0)}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                          min="0"
-                          step="0.01"
-                        />
+                        <div className="flex gap-1">
+                          <select
+                            value={line.quantity}
+                            onChange={(e) => handleLineChange(line.id, 'quantity', parseFloat(e.target.value) || 0)}
+                            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          >
+                            <option value={1}>1</option>
+                            <option value={2}>2</option>
+                            <option value={3}>3</option>
+                            <option value={4}>4</option>
+                            <option value={5}>5</option>
+                            <option value={10}>10</option>
+                            <option value={20}>20</option>
+                            <option value={50}>50</option>
+                            <option value={100}>100</option>
+                          </select>
+                          <input
+                            type="number"
+                            value={line.quantity}
+                            onChange={(e) => handleLineChange(line.id, 'quantity', parseFloat(e.target.value) || 0)}
+                            placeholder="Custom"
+                            className="w-20 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                            min="0"
+                            step="0.01"
+                          />
+                        </div>
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Prix unitaire (€)
                         </label>
-                        <input
-                          type="number"
-                          value={line.unitPrice}
-                          onChange={(e) => handleLineChange(line.id, 'unitPrice', parseFloat(e.target.value) || 0)}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                          min="0"
-                          step="0.01"
-                        />
+                        <div className="flex gap-1">
+                          <select
+                            value={line.unitPrice}
+                            onChange={(e) => handleLineChange(line.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          >
+                            <option value={0}>Sélectionner...</option>
+                            <option value={25}>25€</option>
+                            <option value={50}>50€</option>
+                            <option value={75}>75€</option>
+                            <option value={100}>100€</option>
+                            <option value={150}>150€</option>
+                            <option value={200}>200€</option>
+                            <option value={300}>300€</option>
+                            <option value={500}>500€</option>
+                            <option value={750}>750€</option>
+                            <option value={1000}>1000€</option>
+                            <option value={1500}>1500€</option>
+                            <option value={2000}>2000€</option>
+                          </select>
+                          <input
+                            type="number"
+                            value={line.unitPrice}
+                            onChange={(e) => handleLineChange(line.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                            placeholder="Custom"
+                            className="w-24 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                            min="0"
+                            step="0.01"
+                          />
+                        </div>
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Heures estimées
                         </label>
-                        <input
-                          type="number"
-                          value={line.estimatedHours || 0}
-                          onChange={(e) => handleLineChange(line.id, 'estimatedHours', parseFloat(e.target.value) || 0)}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                          min="0"
-                          step="0.1"
-                        />
+                        <div className="flex gap-1">
+                          <select
+                            value={line.estimatedHours || 0}
+                            onChange={(e) => handleLineChange(line.id, 'estimatedHours', parseFloat(e.target.value) || 0)}
+                            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          >
+                            <option value={0}>0h</option>
+                            <option value={0.5}>30min</option>
+                            <option value={1}>1h</option>
+                            <option value={2}>2h</option>
+                            <option value={4}>4h</option>
+                            <option value={8}>8h (1 jour)</option>
+                            <option value={16}>16h (2 jours)</option>
+                            <option value={24}>24h (3 jours)</option>
+                            <option value={40}>40h (1 semaine)</option>
+                            <option value={80}>80h (2 semaines)</option>
+                            <option value={160}>160h (1 mois)</option>
+                          </select>
+                          <input
+                            type="number"
+                            value={line.estimatedHours || 0}
+                            onChange={(e) => handleLineChange(line.id, 'estimatedHours', parseFloat(e.target.value) || 0)}
+                            placeholder="Custom"
+                            className="w-20 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                            min="0"
+                            step="0.1"
+                          />
+                        </div>
                       </div>
 
                       <div>
@@ -550,77 +1079,133 @@ function CreateQuote() {
                     </div>
                   </div>
                 ))}
-              </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Paramètres financiers */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                💰 Paramètres financiers
-              </h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => toggleSection('financial')}
+                className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+              >
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  💰 Paramètres financiers
+                </h2>
+                <span className={`transform transition-transform ${openSections.financial ? 'rotate-180' : ''}`}>
+                  ▼
+                </span>
+              </button>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {openSections.financial && (
+                <div className="px-6 pb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Taux horaire (€/h)
                   </label>
-                  <input
-                    type="number"
-                    value={quote.hourlyRate}
-                    onChange={(e) => handleQuoteChange('hourlyRate', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    min="0"
-                    step="0.01"
-                  />
+                  <div className="flex gap-2">
+                    <select
+                      value={quote.hourlyRate}
+                      onChange={(e) => handleQuoteChange('hourlyRate', parseFloat(e.target.value) || 0)}
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                      {hourlyRates.map((rate) => (
+                        <option key={rate} value={rate}>{rate}€/h</option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      value={quote.hourlyRate}
+                      onChange={(e) => handleQuoteChange('hourlyRate', parseFloat(e.target.value) || 0)}
+                      placeholder="Custom"
+                      className="w-24 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Marge (%)
                   </label>
-                  <input
-                    type="number"
-                    value={quote.margin}
-                    onChange={(e) => handleQuoteChange('margin', parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    min="0"
-                    max="100"
-                    step="0.01"
-                  />
+                  <div className="flex gap-2">
+                    <select
+                      value={quote.margin}
+                      onChange={(e) => handleQuoteChange('margin', parseFloat(e.target.value) || 0)}
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                      {margins.map((margin) => (
+                        <option key={margin} value={margin}>
+                          {margin === 0 ? 'Aucune marge' : `${margin}%`}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      value={quote.margin}
+                      onChange={(e) => handleQuoteChange('margin', parseFloat(e.target.value) || 0)}
+                      placeholder="Custom"
+                      className="w-20 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                    />
+                  </div>
                 </div>
-              </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Livraison et paiement */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                🚚 Livraison et paiement
-              </h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => toggleSection('delivery')}
+                className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+              >
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  🚚 Livraison et paiement
+                </h2>
+                <span className={`transform transition-transform ${openSections.delivery ? 'rotate-180' : ''}`}>
+                  ▼
+                </span>
+              </button>
               
-              <div className="space-y-4">
+              {openSections.delivery && (
+                <div className="px-6 pb-6">
+                  <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Délai de livraison
                     </label>
-                    <input
-                      type="text"
+                    <select
                       value={delivery.deliveryTime}
                       onChange={(e) => setDelivery(prev => ({ ...prev, deliveryTime: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    />
+                    >
+                      {deliveryTimes.map((time) => (
+                        <option key={time} value={time}>{time}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Mode de livraison
                     </label>
-                    <input
-                      type="text"
+                    <select
                       value={delivery.deliveryMethod}
                       onChange={(e) => setDelivery(prev => ({ ...prev, deliveryMethod: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    />
+                    >
+                      {deliveryMethods.map((method) => (
+                        <option key={method} value={method}>{method}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -641,24 +1226,30 @@ function CreateQuote() {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Conditions de paiement
                     </label>
-                    <input
-                      type="text"
+                    <select
                       value={payment.paymentTerms}
                       onChange={(e) => setPayment(prev => ({ ...prev, paymentTerms: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    />
+                    >
+                      {paymentTerms.map((term) => (
+                        <option key={term} value={term}>{term}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Mode de paiement
                     </label>
-                    <input
-                      type="text"
+                    <select
                       value={payment.paymentMethod}
                       onChange={(e) => setPayment(prev => ({ ...prev, paymentMethod: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    />
+                    >
+                      {paymentMethods.map((method) => (
+                        <option key={method} value={method}>{method}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -667,14 +1258,17 @@ function CreateQuote() {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Acompte (%)
                     </label>
-                    <input
-                      type="number"
+                    <select
                       value={payment.advancePayment}
                       onChange={(e) => setPayment(prev => ({ ...prev, advancePayment: parseFloat(e.target.value) || 0 }))}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      min="0"
-                      max="100"
-                    />
+                    >
+                      {advancePayments.map((percent) => (
+                        <option key={percent} value={percent}>
+                          {percent === 0 ? 'Aucun acompte' : `${percent}%`}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -690,7 +1284,9 @@ function CreateQuote() {
                     placeholder="IBAN, BIC, etc."
                   />
                 </div>
-              </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Actions */}
@@ -710,128 +1306,6 @@ function CreateQuote() {
               >
                 {saving ? 'Création...' : '💾 Créer le devis'}
               </button>
-            </div>
-          </div>
-
-          {/* Aperçu en temps réel */}
-          <div className="lg:sticky lg:top-6">
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                👁️ Aperçu en temps réel
-              </h2>
-              
-              <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-6 bg-white">
-                {/* En-tête */}
-                <div className="flex items-center justify-between mb-6 pb-4 border-b-2" style={{ borderColor: quote.color }}>
-                  <div className="flex items-center gap-4">
-                    {quote.logo && (
-                      <img src={quote.logo} alt="Logo" className="h-12 w-auto" />
-                    )}
-                    <div>
-                      <h1 className="text-xl font-bold text-gray-900">
-                        {companySettings?.name || 'Votre Entreprise'}
-                      </h1>
-                      {companySettings && (
-                        <p className="text-sm text-gray-600">
-                          {companySettingsService.formatFullAddress(companySettings)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold" style={{ color: quote.color }}>
-                      DEVIS
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      {new Date().toLocaleDateString('fr-FR')}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Informations du devis */}
-                <div className="mb-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                    {quote.title || 'Titre du devis'}
-                  </h2>
-                  {quote.description && (
-                    <p className="text-gray-600 mb-4">{quote.description}</p>
-                  )}
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <h3 className="font-medium text-gray-900 mb-2">Client</h3>
-                      <p className="text-gray-600">{quote.clientName || 'Nom du client'}</p>
-                      {quote.clientEmail && <p className="text-gray-600">{quote.clientEmail}</p>}
-                      {quote.clientPhone && <p className="text-gray-600">{quote.clientPhone}</p>}
-                      {quote.clientAddress && <p className="text-gray-600">{quote.clientAddress}</p>}
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-gray-900 mb-2">Validité</h3>
-                      <p className="text-gray-600">
-                        {quote.validUntil 
-                          ? new Date(quote.validUntil).toLocaleDateString('fr-FR')
-                          : 'Non spécifiée'
-                        }
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Lignes du devis */}
-                <div className="mb-6">
-                  <h3 className="font-medium text-gray-900 mb-3">Prestations</h3>
-                  <div className="space-y-2">
-                    {lines.map((line, index) => (
-                      <div key={line.id} className="flex items-center justify-between py-2 border-b border-gray-100">
-                        <div className="flex-1">
-                          <div className="font-medium text-gray-900">
-                            {line.title || `Ligne ${index + 1}`}
-                          </div>
-                          {line.description && (
-                            <div className="text-sm text-gray-600">{line.description}</div>
-                          )}
-                          <div className="text-sm text-gray-500">
-                            {line.quantity} × {quoteService.formatAmount(line.unitPrice)}
-                            {line.estimatedHours && ` (${quoteService.formatHours(line.estimatedHours)})`}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-medium text-gray-900">
-                            {quoteService.formatAmount(line.totalPrice)}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Totaux */}
-                <div className="mb-6">
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-gray-600">Sous-total HT</span>
-                    <span className="font-medium">{quoteService.formatAmount(subtotal)}</span>
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-gray-600">Marge ({quote.margin}%)</span>
-                    <span className="font-medium">{quoteService.formatAmount(totalWithMargin - subtotal)}</span>
-                  </div>
-                  <div className="flex items-center justify-between py-3 border-t-2 border-gray-200" style={{ borderColor: quote.color }}>
-                    <span className="text-lg font-semibold text-gray-900">Total HT</span>
-                    <span className="text-lg font-bold" style={{ color: quote.color }}>
-                      {quoteService.formatAmount(totalWithMargin)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Conditions */}
-                <div className="text-sm text-gray-600 space-y-1">
-                  <p><strong>Livraison:</strong> {delivery.deliveryTime} - {delivery.deliveryMethod}</p>
-                  <p><strong>Paiement:</strong> {payment.paymentTerms} - {payment.paymentMethod}</p>
-                  {payment.advancePayment > 0 && (
-                    <p><strong>Acompte:</strong> {payment.advancePayment}% à la commande</p>
-                  )}
-                </div>
-              </div>
             </div>
           </div>
         </div>
