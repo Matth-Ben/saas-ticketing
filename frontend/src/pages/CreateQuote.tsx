@@ -393,7 +393,7 @@ function CreateQuote() {
           <p className="text-gray-600 dark:text-gray-400">
             Créez un devis professionnel avec rendu en temps réel
           </p>
-        </div>
+        </div> 
 
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
