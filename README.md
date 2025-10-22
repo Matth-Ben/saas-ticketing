@@ -1,6 +1,6 @@
 # 🎯 Kanban Time Tracker
 
-Outil de gestion de projet complet combinant Kanban, Timeline (Gantt), Time Tracker, et générateur de devis.
+Outil de gestion de projet complet combinant Kanban, Time Tracker, et générateur de devis professionnel avec interface moderne et sidebar intelligente.
 
 ## 📋 Description
 
@@ -8,6 +8,7 @@ Un système de gestion de projet moderne destiné aux freelances, agences et che
 
 ### Fonctionnalités principales
 
+- 🎨 **Interface moderne** avec sidebar intelligente et sections collapsibles
 - 📊 **Kanban interactif** avec drag & drop et colonnes personnalisables
 - ⏱️ **Time Tracker** intégré avec sessions détaillées et rapports
 - 💰 **Système de devis complet** avec rendu en temps réel et export PDF
@@ -15,9 +16,10 @@ Un système de gestion de projet moderne destiné aux freelances, agences et che
 - 🏢 **Gestion d'entreprise** avec paramètres complets (SIRET, TVA, logo)
 - 👤 **Association client-projet** avec informations automatiques
 - 📋 **5 vues de projet** : Résumé, Kanban, Liste, Temps, Devis
+- 🎯 **Création de devis avancée** avec dropdowns intelligents et aperçu temps réel
 - 📐 **Templates de projets** réutilisables (à venir)
 - 👥 **Gestion multi-utilisateur** et multi-projet (à venir)
-- 🎨 **Interface moderne** avec thème clair/sombre et design responsive
+- 🌙 **Thème clair/sombre** avec persistance et design responsive
 
 ## 🏗️ Architecture
 
@@ -128,6 +130,9 @@ npm run dev:backend
 - Axios
 - Framer Motion
 - Recharts
+- React Quill (éditeur WYSIWYG)
+- React Beautiful DnD (drag & drop)
+- Date-fns (gestion des dates)
 
 ### Backend
 
@@ -145,9 +150,25 @@ npm run dev:backend
 - [CONTEXT_README.md](./docs/CONTEXT_README.md) - Contexte complet du projet
 - [SPRINTS.md](./docs/SPRINTS.md) - Plan de développement par sprints
 
-## 🎨 Thème
+## 🎨 Interface moderne
 
-L'application supporte les thèmes clair et sombre. Le thème est persisté dans le localStorage et peut être changé depuis les paramètres ou le tableau de bord.
+### Sidebar intelligente
+- ✅ **Navigation centralisée** : Tous les liens dans une sidebar fixe
+- ✅ **Dropdown Projets** : Liste des projets avec couleurs et clients
+- ✅ **Bouton thème intégré** : Changement de thème directement dans la sidebar
+- ✅ **Responsive** : Overlay sur mobile, fixe sur desktop
+- ✅ **État persistant** : Ouverture/fermeture mémorisée
+
+### Sections collapsibles
+- ✅ **Interface épurée** : Sections qui s'ouvrent/ferment à la demande
+- ✅ **Workflow optimisé** : L'utilisateur suit un processus logique
+- ✅ **Focus amélioré** : Une section à la fois pour éviter la surcharge
+- ✅ **Animations fluides** : Transitions smooth avec icônes rotatives
+
+### Thème clair/sombre
+- ✅ **Persistance** : Thème sauvegardé dans le localStorage
+- ✅ **Changement instantané** : Bouton dans la sidebar
+- ✅ **Cohérence** : Tous les composants adaptés aux deux thèmes
 
 ## 📝 Scripts disponibles
 
@@ -200,7 +221,7 @@ L'application supporte les thèmes clair et sombre. Le thème est persisté dans
 
 ### Pages principales
 - `/` - Dashboard principal
-- `/boards` - Liste des projets
+- `/boards` - Liste des projets (maintenant accessible via sidebar)
 - `/reports` - Rapports et statistiques
 - `/settings` - Paramètres d'entreprise
 
@@ -209,7 +230,7 @@ L'application supporte les thèmes clair et sombre. Le thème est persisté dans
 - `/project/:id/settings` - Paramètres du projet et client
 
 ### Pages de devis
-- `/project/:boardId/quote/create` - Création de devis avec rendu temps réel
+- `/project/:boardId/quote/create` - Création de devis avec sections collapsibles et aperçu temps réel
 
 ## 🗺️ Roadmap
 
@@ -231,6 +252,23 @@ Ce projet est privé et destiné à un usage personnel/professionnel.
 Matthias - [Kanban Time Tracker](https://github.com/Matth-Ben)
 
 ## 🎯 Fonctionnalités actuelles (Sprint 1 + 2 + 3)
+
+### Interface moderne
+
+#### Sidebar intelligente
+- ✅ **Navigation centralisée** : Dashboard, Projets, Rapports, Paramètres
+- ✅ **Dropdown Projets** : Liste des projets avec couleurs et noms des clients
+- ✅ **Bouton thème intégré** : Changement de thème clair/sombre
+- ✅ **Responsive design** : Overlay sur mobile, fixe sur desktop
+- ✅ **État persistant** : Ouverture/fermeture mémorisée
+- ✅ **Bouton hamburger** : Pour mobile avec animation
+
+#### Sections collapsibles
+- ✅ **Interface épurée** : Sections qui s'ouvrent/ferment individuellement
+- ✅ **Workflow optimisé** : Processus de création guidé
+- ✅ **Focus amélioré** : Une section à la fois pour éviter la surcharge
+- ✅ **Animations fluides** : Transitions smooth avec icônes rotatives
+- ✅ **Boutons spéciaux** : "Ajouter" reste accessible même fermé
 
 ### Gestion de Projets
 
@@ -324,13 +362,20 @@ Matthias - [Kanban Time Tracker](https://github.com/Matth-Ben)
 - ✅ **Export PDF** : Génération de devis professionnels avec informations entreprise
 
 #### Création de devis avancée
-- ✅ **Interface complète** : Formulaire + aperçu en temps réel
-- ✅ **Apparence personnalisable** : Couleur du devis et logo
-- ✅ **Informations client** : Récupération automatique depuis le projet
-- ✅ **Produits et services** : Lignes dynamiques avec types (Tâche, Service, Matériel, Remise)
+- ✅ **Interface complète** : Formulaire + aperçu en temps réel (layout 8 colonnes)
+- ✅ **Sections collapsibles** : 6 sections qui s'ouvrent/ferment individuellement
+- ✅ **Dropdowns intelligents** : Valeurs prédéfinies pour tous les champs
+- ✅ **Apparence personnalisable** : 12 couleurs prédéfinies + sélecteur personnalisé
+- ✅ **Logos prédéfinis** : Exemples + URL personnalisée
+- ✅ **Titres prédéfinis** : 12 titres courants + saisie manuelle
+- ✅ **Clients prédéfinis** : 10 types de clients + saisie manuelle
+- ✅ **Validité automatique** : 8 durées prédéfinies + calcul automatique de date
+- ✅ **Produits et services** : Services/matériels prédéfinis + saisie manuelle
+- ✅ **Quantités/Prix** : Valeurs courantes + champs custom
+- ✅ **Heures estimées** : Durées prédéfinies (30min à 1 mois) + custom
+- ✅ **Catégories** : 12 catégories professionnelles
+- ✅ **Conditions** : Délais, modes, acomptes prédéfinis
 - ✅ **Calculs automatiques** : Quantité × Prix, sous-total, marge, total HT
-- ✅ **Conditions de livraison** : Délais, mode, adresse
-- ✅ **Conditions de paiement** : Délais, mode, acompte, coordonnées bancaires
 
 #### Vue Devis
 - ✅ **Liste des devis** : Tous les devis du projet avec statuts
@@ -400,21 +445,30 @@ Matthias - [Kanban Time Tracker](https://github.com/Matth-Ben)
 
 #### Devis & Rentabilité
 19. Aller dans l'onglet "💰 Devis" d'un projet
-20. Cliquer sur "➕ Nouveau" pour créer un devis avec rendu en temps réel
-21. Configurer les paramètres d'entreprise dans "⚙️ Paramètres" (menu principal)
-22. Configurer les informations client dans "⚙️ Paramètres" du projet
-23. Utiliser "⚡ Auto" pour générer un devis depuis les tâches
-24. Voir les graphiques de rentabilité dans l'onglet "📊 Résumé"
-25. Exporter un devis en PDF avec le bouton "📄 PDF"
+20. Cliquer sur "➕ Nouveau" pour créer un devis avec sections collapsibles
+21. Ouvrir les sections une par une : Apparence → Informations → Client → Produits → Financier → Livraison
+22. Utiliser les dropdowns pour sélectionner rapidement les valeurs prédéfinies
+23. Voir l'aperçu en temps réel à droite qui se met à jour automatiquement
+24. Configurer les paramètres d'entreprise dans "⚙️ Paramètres" (menu principal)
+25. Configurer les informations client dans "⚙️ Paramètres" du projet
+26. Utiliser "⚡ Auto" pour générer un devis depuis les tâches
+27. Voir les graphiques de rentabilité dans l'onglet "📊 Résumé"
+28. Exporter un devis en PDF avec le bouton "📄 PDF"
+
+#### Interface moderne
+29. Utiliser la sidebar pour naviguer entre les sections
+30. Cliquer sur "Projets" dans la sidebar pour voir la liste des projets
+31. Utiliser le bouton thème 🌙/☀️ dans la sidebar pour changer le thème
+32. Sur mobile, utiliser le bouton hamburger ☰ pour ouvrir la sidebar
 
 #### Paramètres
-26. Aller dans "⚙️ Paramètres" (menu principal) pour configurer l'entreprise
-27. Aller dans "⚙️ Paramètres" d'un projet pour configurer le client
-28. Voir les aperçus en temps réel des informations
+33. Aller dans "⚙️ Paramètres" (menu principal) pour configurer l'entreprise
+34. Aller dans "⚙️ Paramètres" d'un projet pour configurer le client
+35. Voir les aperçus en temps réel des informations
 
 Voir [TEST_DATA.md](./TEST_DATA.md) et [INSTALLATION.md](./INSTALLATION.md) pour plus de détails.
 
 ---
 
-**Note :** Sprint 1, 2 & 3 terminés ! Le Kanban, Time Tracking et système de Devis sont pleinement fonctionnels. Prochain sprint : Templates de projets.
+**Note :** Sprint 1, 2 & 3 terminés ! Le Kanban, Time Tracking et système de Devis sont pleinement fonctionnels avec une interface moderne et des sections collapsibles. Prochain sprint : Templates de projets.
 
