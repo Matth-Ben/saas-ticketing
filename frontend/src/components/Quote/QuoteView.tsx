@@ -242,6 +242,8 @@ function QuoteDetails({ quote, onUpdate, onEditCard }: QuoteDetailsProps) {
   const [editing, setEditing] = useState(false)
   const [quoteData, setQuoteData] = useState<Partial<Quote>>(quote)
   const [showAddLineModal, setShowAddLineModal] = useState(false)
+  const [generatingTickets, setGeneratingTickets] = useState(false)
+  const [generationResult, setGenerationResult] = useState<any>(null)
 
   const handleUpdateQuote = async () => {
     try {
@@ -250,6 +252,44 @@ function QuoteDetails({ quote, onUpdate, onEditCard }: QuoteDetailsProps) {
       onUpdate()
     } catch (err) {
       console.error('Failed to update quote:', err)
+    }
+  }
+
+  const handleGenerateTickets = async (force: boolean = false) => {
+    try {
+      setGeneratingTickets(true)
+      const result = await quoteService.generateTickets(quote.id, force)
+      setGenerationResult(result)
+      onUpdate()
+      
+      // Afficher un message de succès
+      if (result.created > 0 || result.updated > 0) {
+        alert(`✅ Génération réussie !\n\n` +
+          `• ${result.created} ticket(s) créé(s)\n` +
+          `• ${result.updated} ticket(s) mis à jour\n` +
+          `• ${result.skipped} ligne(s) ignorée(s)`)
+      } else if (result.skipped > 0) {
+        alert(`ℹ️ Aucun ticket à créer.\n\n` +
+          `${result.skipped} ligne(s) déjà existante(s).`)
+      }
+    } catch (err: any) {
+      console.error('Failed to generate tickets:', err)
+      const errorMessage = err.response?.data?.error || 'Erreur lors de la génération des tickets'
+      
+      if (err.response?.data?.currentStatus && err.response.data.currentStatus !== 'accepted') {
+        const confirmForce = confirm(
+          `⚠️ ${errorMessage}\n\n` +
+          `Statut actuel: ${quoteService.getStatusLabel(err.response.data.currentStatus)}\n\n` +
+          `Voulez-vous forcer la génération des tickets ?`
+        )
+        if (confirmForce) {
+          handleGenerateTickets(true)
+        }
+      } else {
+        alert(`❌ ${errorMessage}`)
+      }
+    } finally {
+      setGeneratingTickets(false)
     }
   }
 
@@ -309,6 +349,14 @@ function QuoteDetails({ quote, onUpdate, onEditCard }: QuoteDetailsProps) {
             <span className={`px-3 py-1 text-sm rounded-full ${quoteService.getStatusColor(quote.status)}`}>
               {quoteService.getStatusLabel(quote.status)}
             </span>
+            <button
+              onClick={() => handleGenerateTickets(false)}
+              disabled={generatingTickets}
+              className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-1"
+              title="Générer les tickets à partir des lignes du devis"
+            >
+              {generatingTickets ? '⏳' : '🎫'} Générer tickets
+            </button>
             <QuotePDFExport quote={quote} />
             {editing ? (
               <div className="flex gap-2">
@@ -338,6 +386,29 @@ function QuoteDetails({ quote, onUpdate, onEditCard }: QuoteDetailsProps) {
             )}
           </div>
         </div>
+
+        {/* Changement de statut rapide */}
+        {editing && (
+          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Changer le statut
+            </label>
+            <select
+              value={quoteData.status || quote.status}
+              onChange={(e) => setQuoteData({ ...quoteData, status: e.target.value as QuoteStatus })}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            >
+              {Object.values(QuoteStatus).map((status) => (
+                <option key={status} value={status}>
+                  {quoteService.getStatusLabel(status)}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+              💡 Passer au statut "Accepté" générera automatiquement les tickets
+            </p>
+          </div>
+        )}
 
         {/* Informations du devis */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
@@ -866,50 +937,57 @@ function GenerateQuoteModal({ board, onClose, onSubmit }: GenerateQuoteModalProp
               </div>
             ) : (
               <div className="max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
-                {availableTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex items-center p-3 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedTasks.includes(task.id)}
-                      onChange={() => handleTaskToggle(task.id)}
-                      className="mr-3"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-gray-500 dark:text-gray-400">
-                          {task.key}
-                        </span>
-                        <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                          {task.title}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4 mt-1">
-                        <span className={`text-xs px-2 py-1 rounded ${
-                          task.status === 'Done' 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                            : task.status === 'In Progress'
-                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                            : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                        }`}>
-                          {task.status}
-                        </span>
-                        {task.estimatedTime && (
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {quoteService.formatHours(task.estimatedTime)}
+                {availableTasks.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <p className="mb-2">📋 Aucune tâche disponible</p>
+                    <p className="text-sm">Toutes les tâches sont déjà associées à un devis ou terminées.</p>
+                  </div>
+                ) : (
+                  availableTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      className="flex items-center p-3 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedTasks.includes(task.id)}
+                        onChange={() => handleTaskToggle(task.id)}
+                        className="mr-3"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono text-gray-500 dark:text-gray-400">
+                            {task.key}
                           </span>
-                        )}
-                        {task.category && (
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {task.category}
+                          <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                            {task.title}
                           </span>
-                        )}
+                        </div>
+                        <div className="flex items-center gap-4 mt-1">
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            task.status === 'Done' 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                              : task.status === 'In Progress'
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                              : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                          }`}>
+                            {task.status}
+                          </span>
+                          {task.estimatedTime && (
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {quoteService.formatHours(task.estimatedTime)}
+                            </span>
+                          )}
+                          {task.category && (
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {task.category}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             )}
           </div>

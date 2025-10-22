@@ -148,6 +148,8 @@ export const updateQuote = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Devis non trouvé' })
     }
 
+    const previousStatus = quote.status
+
     // Convertir les dates si nécessaire
     if (updateData.validUntil) {
       updateData.validUntil = new Date(updateData.validUntil)
@@ -158,6 +160,19 @@ export const updateQuote = async (req: Request, res: Response) => {
     // Recalculer les totaux si nécessaire
     if (updateData.hourlyRate || updateData.margin) {
       await recalculateQuoteTotals(id)
+    }
+
+    // Générer automatiquement les tickets si le statut passe à ACCEPTED
+    if (previousStatus !== QuoteStatus.ACCEPTED && updateData.status === QuoteStatus.ACCEPTED) {
+      try {
+        console.log(`🎫 Génération automatique de tickets pour le devis ${id}`)
+        console.log(`   Status précédent: ${previousStatus} → Nouveau: ${updateData.status}`)
+        await autoGenerateTicketsFromQuote(id)
+        console.log(`✅ Génération de tickets terminée pour le devis ${id}`)
+      } catch (error) {
+        console.error('❌ Error auto-generating tickets:', error)
+        // Ne pas bloquer la mise à jour du devis si la génération échoue
+      }
     }
 
     const updatedQuote = await Quote.findByPk(id, {
@@ -412,7 +427,12 @@ export const getAvailableTasks = async (req: Request, res: Response) => {
     }
 
     // Récupérer les tâches du projet
-    const whereClause: any = { boardId, parentId: null } // Exclure les sous-tâches
+    const whereClause: any = { 
+      boardId, 
+      parentId: null, // Exclure les sous-tâches
+      quoteId: null // ✅ NOUVEAU : Exclure les tâches déjà associées à un devis
+    }
+    
     if (includeCompleted !== 'true') {
       whereClause.status = { [Op.ne]: 'Done' }
     }
@@ -422,6 +442,8 @@ export const getAvailableTasks = async (req: Request, res: Response) => {
       attributes: ['id', 'key', 'title', 'description', 'status', 'estimatedTime', 'category'],
       order: [['position', 'ASC']],
     })
+
+    console.log(`📋 Tâches disponibles pour le devis: ${cards.length} (sans devis associé)`)
 
     res.json(cards)
   } catch (error) {
@@ -451,12 +473,17 @@ export const generateQuoteFromTasks = async (req: Request, res: Response) => {
           id: { [Op.in]: selectedCardIds },
           boardId,
           parentId: null, // Exclure les sous-tâches
+          quoteId: null, // ✅ NOUVEAU : Seulement les tickets sans devis
         },
         order: [['position', 'ASC']],
       })
     } else {
       // Récupérer toutes les tâches du projet (comportement par défaut)
-      const whereClause: any = { boardId, parentId: null }
+      const whereClause: any = { 
+        boardId, 
+        parentId: null,
+        quoteId: null // ✅ NOUVEAU : Seulement les tickets sans devis
+      }
       if (!includeCompleted) {
         whereClause.status = { [Op.ne]: 'Done' }
       }
@@ -487,7 +514,7 @@ export const generateQuoteFromTasks = async (req: Request, res: Response) => {
       margin: parseFloat(margin) || 20,
     })
 
-    // Créer les lignes du devis
+    // Créer les lignes du devis et associer les tickets
     let lineNumber = 1
     let totalHours = 0
 
@@ -510,6 +537,10 @@ export const generateQuoteFromTasks = async (req: Request, res: Response) => {
         category: card.category || null,
       })
 
+      // ✅ NOUVEAU : Associer le ticket au devis
+      await card.update({ quoteId: quote.id })
+      console.log(`🔗 Ticket ${card.key} associé au devis ${quote.quoteNumber}`)
+
       totalHours += estimatedHours
       lineNumber++
     }
@@ -520,6 +551,8 @@ export const generateQuoteFromTasks = async (req: Request, res: Response) => {
       totalHours,
       totalAmount,
     })
+
+    console.log(`✅ Devis ${quote.quoteNumber} créé avec ${cards.length} ticket(s) associé(s)`)
 
     // Récupérer le devis complet
     const completeQuote = await Quote.findByPk(quote.id, {
@@ -639,6 +672,256 @@ export const getProfitabilityStats = async (req: Request, res: Response) => {
     console.error('Error getting profitability stats:', error)
     res.status(500).json({ error: 'Erreur lors du calcul de la rentabilité' })
   }
+}
+
+// Générer des tickets à partir d'un devis
+export const generateTicketsFromQuote = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const { force = false } = req.body
+
+    const quote = await Quote.findByPk(id, {
+      include: [
+        {
+          model: QuoteLine,
+          as: 'lines',
+          where: { type: QuoteLineType.TASK },
+          required: false,
+        },
+        {
+          model: Board,
+          as: 'board',
+        },
+      ],
+    })
+
+    if (!quote) {
+      return res.status(404).json({ error: 'Devis non trouvé' })
+    }
+
+    // Vérifier que le devis est accepté, sauf si force = true
+    if (!force && quote.status !== QuoteStatus.ACCEPTED) {
+      return res.status(400).json({ 
+        error: 'Le devis doit être validé (accepté) pour générer les tickets',
+        currentStatus: quote.status 
+      })
+    }
+
+    const board = quote.board as any
+    if (!board) {
+      return res.status(404).json({ error: 'Projet associé non trouvé' })
+    }
+
+    const createdCards: Card[] = []
+    const skippedLines: any[] = []
+    const updatedLines: any[] = []
+
+    // Récupérer toutes les cartes existantes du projet pour vérifier les doublons
+    const existingCards = await Card.findAll({
+      where: { 
+        boardId: quote.boardId,
+        quoteId: quote.id,
+      },
+    })
+
+    // Créer une map pour la détection des doublons (titre + quoteId)
+    const existingCardsMap = new Map(
+      existingCards.map(card => [`${card.title.toLowerCase()}-${card.quoteId}`, card])
+    )
+
+    for (const line of quote.lines || []) {
+      // Vérifier si un ticket existe déjà avec le même titre et le même devis
+      const duplicateKey = `${line.title.toLowerCase()}-${quote.id}`
+      
+      if (existingCardsMap.has(duplicateKey)) {
+        skippedLines.push({
+          lineId: line.id,
+          title: line.title,
+          reason: 'Un ticket avec ce titre existe déjà pour ce devis',
+        })
+        continue
+      }
+
+      // Si la ligne a déjà un cardId, mettre à jour la carte existante
+      if (line.cardId) {
+        const existingCard = await Card.findByPk(line.cardId)
+        if (existingCard) {
+          await existingCard.update({
+            quoteId: quote.id,
+          })
+          updatedLines.push({
+            lineId: line.id,
+            cardId: existingCard.id,
+            cardKey: existingCard.key,
+            title: existingCard.title,
+          })
+          continue
+        }
+      }
+
+      // Générer une clé unique pour la carte
+      const lastCard = await Card.findOne({
+        where: { boardId: quote.boardId },
+        order: [['createdAt', 'DESC']],
+      })
+
+      let nextNumber = 1
+      if (lastCard && lastCard.key) {
+        const match = lastCard.key.match(/-(\d+)$/)
+        if (match) {
+          nextNumber = parseInt(match[1]) + 1
+        }
+      }
+
+      const cardKey = `${board.key || 'PROJ'}-${nextNumber}`
+
+      // Créer la carte
+      const newCard = await Card.create({
+        boardId: quote.boardId,
+        quoteId: quote.id,
+        key: cardKey,
+        title: line.title,
+        description: line.description 
+          ? `${line.description}\n\n---\n📋 Généré depuis le devis: ${quote.quoteNumber}`
+          : `📋 Généré depuis le devis: ${quote.quoteNumber}`,
+        status: 'To Do',
+        priority: 'medium',
+        position: 0,
+        category: line.category || null,
+        estimatedTime: line.estimatedHours ? Math.round(line.estimatedHours) : null,
+      })
+
+      // Mettre à jour la ligne de devis avec le cardId
+      await line.update({ cardId: newCard.id })
+
+      createdCards.push(newCard)
+    }
+
+    res.status(201).json({
+      message: 'Génération des tickets terminée',
+      created: createdCards.length,
+      skipped: skippedLines.length,
+      updated: updatedLines.length,
+      cards: createdCards.map(card => ({
+        id: card.id,
+        key: card.key,
+        title: card.title,
+        status: card.status,
+      })),
+      skippedLines,
+      updatedLines,
+    })
+  } catch (error) {
+    console.error('Error generating tickets from quote:', error)
+    res.status(500).json({ error: 'Erreur lors de la génération des tickets' })
+  }
+}
+
+// Fonction utilitaire pour générer automatiquement les tickets (sans réponse HTTP)
+const autoGenerateTicketsFromQuote = async (quoteId: string) => {
+  console.log(`📋 Début génération pour devis ${quoteId}`)
+  
+  const quote = await Quote.findByPk(quoteId, {
+    include: [
+      {
+        model: QuoteLine,
+        as: 'lines',
+        where: { type: QuoteLineType.TASK },
+        required: false,
+      },
+      {
+        model: Board,
+        as: 'board',
+      },
+    ],
+  })
+
+  if (!quote) {
+    console.log(`⚠️ Devis ${quoteId} non trouvé`)
+    return
+  }
+
+  console.log(`✓ Devis trouvé: ${quote.title}`)
+  console.log(`✓ Nombre de lignes de type TASK: ${quote.lines?.length || 0}`)
+
+  const board = quote.board as any
+  if (!board) {
+    console.log(`⚠️ Board non trouvé pour le devis ${quoteId}`)
+    return
+  }
+
+  console.log(`✓ Board trouvé: ${board.name} (${board.id})`)
+
+  const existingCards = await Card.findAll({
+    where: { 
+      boardId: quote.boardId,
+      quoteId: quote.id,
+    },
+  })
+
+  const existingCardsMap = new Map(
+    existingCards.map(card => [`${card.title.toLowerCase()}-${card.quoteId}`, card])
+  )
+
+  let createdCount = 0
+  let skippedCount = 0
+  let updatedCount = 0
+
+  for (const line of quote.lines || []) {
+    const duplicateKey = `${line.title.toLowerCase()}-${quote.id}`
+    
+    if (existingCardsMap.has(duplicateKey)) {
+      console.log(`⏭️ Ligne "${line.title}" ignorée (doublon)`)
+      skippedCount++
+      continue
+    }
+
+    if (line.cardId) {
+      const existingCard = await Card.findByPk(line.cardId)
+      if (existingCard) {
+        await existingCard.update({ quoteId: quote.id })
+        console.log(`🔄 Carte "${existingCard.title}" mise à jour`)
+        updatedCount++
+        continue
+      }
+    }
+
+    const lastCard = await Card.findOne({
+      where: { boardId: quote.boardId },
+      order: [['createdAt', 'DESC']],
+    })
+
+    let nextNumber = 1
+    if (lastCard && lastCard.key) {
+      const match = lastCard.key.match(/-(\d+)$/)
+      if (match) {
+        nextNumber = parseInt(match[1]) + 1
+      }
+    }
+
+    const cardKey = `${board.key || 'PROJ'}-${nextNumber}`
+
+    const newCard = await Card.create({
+      boardId: quote.boardId,
+      quoteId: quote.id,
+      key: cardKey,
+      title: line.title,
+      description: line.description 
+        ? `${line.description}\n\n---\n📋 Généré depuis le devis: ${quote.quoteNumber}`
+        : `📋 Généré depuis le devis: ${quote.quoteNumber}`,
+      status: 'To Do',
+      priority: 'medium',
+      position: 0,
+      category: line.category || null,
+      estimatedTime: line.estimatedHours ? Math.round(line.estimatedHours) : null,
+    })
+
+    await line.update({ cardId: newCard.id })
+    console.log(`✅ Ticket créé: ${cardKey} - ${line.title}`)
+    createdCount++
+  }
+
+  console.log(`📊 Résumé: ${createdCount} créé(s), ${updatedCount} mis à jour, ${skippedCount} ignoré(s)`)
 }
 
 // Fonction utilitaire pour recalculer les totaux d'un devis

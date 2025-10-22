@@ -12,6 +12,7 @@ import {
   getAvailableTasks,
   generateQuoteFromTasks,
   getProfitabilityStats,
+  generateTicketsFromQuote,
 } from '../controllers/quoteController.js'
 
 const router = Router()
@@ -33,5 +34,6 @@ router.get('/board/:boardId/tasks', getAvailableTasks)
 router.post('/board/:boardId/import', importQuote)
 router.post('/board/:boardId/generate', generateQuoteFromTasks)
 router.get('/board/:boardId/profitability', getProfitabilityStats)
+router.post('/:id/generate-tickets', generateTicketsFromQuote)
 
 export default router

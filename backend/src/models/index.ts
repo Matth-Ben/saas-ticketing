@@ -103,6 +103,18 @@ Card.hasMany(QuoteLine, {
   onDelete: 'SET NULL',
 })
 
+// Relations entre Quote et Card (pour la génération de tickets)
+Quote.hasMany(Card, {
+  foreignKey: 'quoteId',
+  as: 'cards',
+  onDelete: 'SET NULL',
+})
+
+Card.belongsTo(Quote, {
+  foreignKey: 'quoteId',
+  as: 'quote',
+})
+
 export { sequelize, Board, Card, Comment, History, TimeEntry, Quote, QuoteLine, CompanySettings }
 
 export default {

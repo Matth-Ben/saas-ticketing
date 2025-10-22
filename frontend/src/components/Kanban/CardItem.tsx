@@ -104,6 +104,15 @@ function CardItem({ card, index, statusColor = '#93c5fd', boardColumns, onEdit, 
             </div>
           )}
 
+          {/* Badge Devis - Nouveau */}
+          {(card as any).quoteId && (
+            <div className="mb-3">
+              <span className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full font-medium">
+                💰 Lié à un devis
+              </span>
+            </div>
+          )}
+
           {/* Footer */}
           <div className="flex items-center justify-between text-xs">
             {/* Priorité */}

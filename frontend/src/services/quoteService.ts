@@ -198,6 +198,22 @@ class QuoteService {
   }
 
   /**
+   * Générer les tickets à partir d'un devis
+   */
+  async generateTickets(quoteId: string, force: boolean = false): Promise<{
+    message: string
+    created: number
+    skipped: number
+    updated: number
+    cards: any[]
+    skippedLines: any[]
+    updatedLines: any[]
+  }> {
+    const response = await api.post(`/quote/${quoteId}/generate-tickets`, { force })
+    return response.data
+  }
+
+  /**
    * Formater un montant en euros
    */
   formatAmount(amount: number | string | null | undefined): string {

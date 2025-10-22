@@ -40,6 +40,7 @@ export interface Card {
   id: string
   boardId: string
   parentId?: string
+  quoteId?: string // ✅ NOUVEAU : Référence au devis associé
   key: string
   title: string
   description?: string

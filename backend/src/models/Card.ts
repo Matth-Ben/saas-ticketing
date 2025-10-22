@@ -11,6 +11,7 @@ interface CardAttributes {
   id: string
   boardId: string
   parentId?: string
+  quoteId?: string
   key: string
   title: string
   description?: string
@@ -36,6 +37,7 @@ interface CardCreationAttributes
     CardAttributes,
     | 'id'
     | 'parentId'
+    | 'quoteId'
     | 'key'
     | 'description'
     | 'priority'
@@ -56,6 +58,7 @@ class Card extends Model<CardAttributes, CardCreationAttributes> implements Card
   declare id: string
   declare boardId: string
   declare parentId?: string
+  declare quoteId?: string
   declare key: string
   declare title: string
   declare description?: string
@@ -100,6 +103,16 @@ Card.init(
         key: 'id',
       },
       onDelete: 'CASCADE',
+    },
+    quoteId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'quotes',
+        key: 'id',
+      },
+      onDelete: 'SET NULL',
+      comment: 'Référence au devis dont provient cette tâche',
     },
     key: {
       type: DataTypes.STRING,
