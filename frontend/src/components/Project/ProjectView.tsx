@@ -6,6 +6,7 @@ import KanbanBoard from '../Kanban/KanbanBoard'
 import ListView from './ListView'
 import TimeTrackerView from '../TimeTracker/TimeTrackerView'
 import QuoteView from '../Quote/QuoteView'
+import TimelineView from '../Timeline/TimelineView'
 
 interface ProjectViewProps {
   board: Board
@@ -13,7 +14,7 @@ interface ProjectViewProps {
   onEditCard: (card: Card) => void
 }
 
-type ViewType = 'summary' | 'kanban' | 'list' | 'timetracker' | 'quotes'
+type ViewType = 'summary' | 'kanban' | 'list' | 'timeline' | 'timetracker' | 'quotes'
 
 function ProjectView({ board, onRefresh, onEditCard }: ProjectViewProps) {
   const navigate = useNavigate()
@@ -21,9 +22,9 @@ function ProjectView({ board, onRefresh, onEditCard }: ProjectViewProps) {
   const [allCards, setAllCards] = useState<Card[]>([])
   const [loading, setLoading] = useState(false)
 
-  // Charger toutes les cartes du board (pour les vues Résumé, Liste et TimeTracker)
+  // Charger toutes les cartes du board (pour les vues Résumé, Liste, Timeline et TimeTracker)
   useEffect(() => {
-    if (activeView === 'summary' || activeView === 'list' || activeView === 'timetracker') {
+    if (activeView === 'summary' || activeView === 'list' || activeView === 'timeline' || activeView === 'timetracker') {
       loadAllCards()
     }
   }, [activeView, board.id])
@@ -44,6 +45,7 @@ function ProjectView({ board, onRefresh, onEditCard }: ProjectViewProps) {
     { id: 'summary', label: '📊 Résumé', icon: '📊' },
     { id: 'kanban', label: '📋 Tableau', icon: '📋' },
     { id: 'list', label: '📝 Liste', icon: '📝' },
+    { id: 'timeline', label: '📅 Timeline', icon: '📅' },
     { id: 'timetracker', label: '⏱️ Temps', icon: '⏱️' },
     { id: 'quotes', label: '💰 Devis', icon: '💰' },
   ]
@@ -106,6 +108,24 @@ function ProjectView({ board, onRefresh, onEditCard }: ProjectViewProps) {
               </div>
             ) : (
               <ListView cards={allCards} onEditCard={onEditCard} />
+            )}
+          </div>
+        )}
+
+        {activeView === 'timeline' && (
+          <div className="h-full">
+            {loading ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-gray-500 dark:text-gray-400">Chargement...</div>
+              </div>
+            ) : (
+              <TimelineView 
+                board={{...board, cards: allCards}} 
+                onUpdateCards={(cards) => {
+                  setAllCards(cards)
+                  onRefresh()
+                }} 
+              />
             )}
           </div>
         )}
