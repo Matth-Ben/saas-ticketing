@@ -1,0 +1,431 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// User & Organization Models
+// ============================================
+
+model User {
+  id             String       @id @default(cuid())
+  email          String       @unique
+  password       String?
+  role           UserRole     @default(freelance)
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  subscription   Subscription?
+  
+  // Profile
+  firstName      String?
+  lastName       String?
+  avatar         String?
+  
+  // Auth
+  googleId       String?      @unique
+  emailVerified  Boolean      @default(false)
+  resetPasswordToken String?
+  resetPasswordExpires DateTime?
+  
+  // Analytics
+  lastLogin      DateTime?
+  sessionCount   Int          @default(0)
+  
+  // Relations
+  projects       ProjectMember[]
+  createdProjects Project[]   @relation("ProjectCreator")
+  createdTickets Ticket[]     @relation("TicketCreator")
+  assignedTickets TicketAssignee[]
+  supportTickets SupportTicket[]
+  analytics      UserAnalytics?
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([email])
+  @@index([organizationId])
+}
+
+enum UserRole {
+  freelance
+  agency
+  enterprise
+  admin
+}
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  type        OrganizationType @default(agency)
+  users       User[]
+  projects    Project[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([name])
+}
+
+enum OrganizationType {
+  freelance
+  agency
+  enterprise
+}
+
+// ============================================
+// Subscription & Billing Models
+// ============================================
+
+model Subscription {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Stripe
+  stripeCustomerId      String?  @unique
+  stripeSubscriptionId  String?  @unique
+  stripePriceId         String?
+  
+  // Plan details
+  plan                  SubscriptionPlan @default(perso)
+  status                SubscriptionStatus @default(trial)
+  billingPeriod         BillingPeriod @default(month)
+  
+  // Dates
+  trialEndsAt           DateTime?
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+  cancelAtPeriodEnd     Boolean  @default(false)
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([userId])
+  @@index([stripeCustomerId])
+  @@index([stripeSubscriptionId])
+}
+
+enum SubscriptionPlan {
+  perso
+  agence
+  entreprise
+}
+
+enum SubscriptionStatus {
+  trial
+  active
+  cancelled
+  expired
+  past_due
+}
+
+enum BillingPeriod {
+  month
+  year
+}
+
+// ============================================
+// Project Models
+// ============================================
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  status      ProjectStatus @default(active)
+  
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  
+  creatorId   String
+  creator     User     @relation("ProjectCreator", fields: [creatorId], references: [id])
+  
+  // Relations
+  members     ProjectMember[]
+  tickets     Ticket[]
+  invoices    Invoice[]
+  documents   Document[]
+  
+  // Metadata
+  archivedAt  DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([creatorId])
+}
+
+enum ProjectStatus {
+  active
+  archived
+  completed
+}
+
+model ProjectMember {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      ProjectMemberRole @default(member)
+  
+  createdAt DateTime @default(now())
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+}
+
+enum ProjectMemberRole {
+  owner
+  member
+  viewer
+}
+
+// ============================================
+// Ticket Models
+// ============================================
+
+model Ticket {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  status        TicketStatus @default(todo)
+  priority      TicketPriority @default(medium)
+  
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  creatorId    String
+  creator       User     @relation("TicketCreator", fields: [creatorId], references: [id])
+  assignees    TicketAssignee[]
+  
+  // Time tracking
+  estimatedTime Int?     // in minutes
+  spentTime     Int      @default(0) // in minutes
+  
+  // Relations
+  timeTrackingSessions TimeTrackingSession[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+  @@index([creatorId])
+}
+
+enum TicketStatus {
+  todo
+  in_progress
+  done
+  cancelled
+}
+
+enum TicketPriority {
+  low
+  medium
+  high
+}
+
+model TicketAssignee {
+  id       String @id @default(cuid())
+  ticketId String
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+
+  @@unique([ticketId, userId])
+  @@index([ticketId])
+  @@index([userId])
+}
+
+model TimeTrackingSession {
+  id        String   @id @default(cuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId    String
+  startTime DateTime @default(now())
+  endTime   DateTime?
+  duration  Int?     // in minutes
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ticketId])
+  @@index([userId])
+}
+
+// ============================================
+// Invoice Models
+// ============================================
+
+model Invoice {
+  id          String   @id @default(cuid())
+  type        InvoiceType
+  number      String   @unique
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Amounts
+  amount      Float
+  taxRate     Float     @default(0)
+  totalAmount Float
+  
+  // Status
+  status      InvoiceStatus @default(draft)
+  
+  // Dates
+  issueDate   DateTime  @default(now())
+  dueDate     DateTime?
+  paidAt      DateTime?
+  
+  // Signature
+  signedAt    DateTime?
+  signatureData Json?
+  
+  // Client link
+  clientLinkToken String? @unique
+  
+  // Relations
+  items       InvoiceItem[]
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+  @@index([clientLinkToken])
+}
+
+enum InvoiceType {
+  invoice
+  quote
+  contract
+}
+
+enum InvoiceStatus {
+  draft
+  sent
+  signed
+  paid
+  cancelled
+}
+
+model InvoiceItem {
+  id        String  @id @default(cuid())
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description String
+  quantity  Float
+  unitPrice Float
+  total     Float
+  
+  createdAt DateTime @default(now())
+}
+
+// ============================================
+// Document Models
+// ============================================
+
+model Document {
+  id          String   @id @default(cuid())
+  name        String
+  type        DocumentType
+  filePath    String
+  fileSize    Int
+  mimeType    String
+  
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  uploadedById String
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectId])
+}
+
+enum DocumentType {
+  file
+  image
+  pdf
+  other
+}
+
+// ============================================
+// Support Models
+// ============================================
+
+model SupportTicket {
+  id          String   @id @default(cuid())
+  subject     String
+  message     String
+  status      SupportTicketStatus @default(open)
+  priority    TicketPriority @default(medium)
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  // Relations
+  comments    SupportComment[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+enum SupportTicketStatus {
+  open
+  in_progress
+  resolved
+  closed
+}
+
+model SupportComment {
+  id          String   @id @default(cuid())
+  ticketId    String
+  ticket      SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  message     String
+  userId      String
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([ticketId])
+}
+
+// ============================================
+// Analytics Models
+// ============================================
+
+model UserAnalytics {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Usage stats
+  loginCount    Int      @default(0)
+  lastLogin     DateTime?
+  sessionDuration Int    @default(0) // total in minutes
+  featuresUsed  Json     @default("{}")
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+}
+
