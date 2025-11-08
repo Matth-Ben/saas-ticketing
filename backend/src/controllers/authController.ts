@@ -1,37 +1,65 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
-// TODO: Import services
-// import { authService } from '../services/authService';
-// TODO: Import Prisma client
-// import { prisma } from '../utils/prisma';
+import { authService } from '../services/authService';
+import { verifyToken } from '../utils/jwt';
 
-// TODO: Implement register function
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // TODO: Validate input
-    // TODO: Check if user already exists
-    // TODO: Hash password
-    // TODO: Create user in database
-    // TODO: Create organization if needed
-    // TODO: Generate JWT tokens
-    // TODO: Return user and tokens
-    res.json({ message: 'Register - TODO: Implement' });
-  } catch (error) {
+    const { email, password, firstName, lastName, role } = req.body;
+
+    // Validate required fields
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email et mot de passe requis' });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: 'Email invalide' });
+    }
+
+    // Validate password length
+    if (password.length < 8) {
+      return res.status(400).json({
+        message: 'Le mot de passe doit contenir au moins 8 caractères'
+      });
+    }
+
+    // Register user
+    const result = await authService.registerUser({
+      email,
+      password,
+      firstName,
+      lastName,
+      role,
+    });
+
+    res.status(201).json(result);
+  } catch (error: any) {
+    if (error.message === 'Email déjà utilisé') {
+      return res.status(400).json({ message: error.message });
+    }
     next(error);
   }
 };
 
-// TODO: Implement login function
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // TODO: Validate input
-    // TODO: Find user by email
-    // TODO: Verify password
-    // TODO: Generate JWT tokens
-    // TODO: Update last login
-    // TODO: Return user and tokens
-    res.json({ message: 'Login - TODO: Implement' });
-  } catch (error) {
+    const { email, password } = req.body;
+
+    // Validate required fields
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email et mot de passe requis' });
+    }
+
+    // Login user
+    const result = await authService.loginUser(email, password);
+
+    res.json(result);
+  } catch (error: any) {
+    if (error.message === 'Email ou mot de passe incorrect') {
+      return res.status(401).json({ message: error.message });
+    }
     next(error);
   }
 };
@@ -47,15 +75,29 @@ export const logout = async (req: AuthRequest, res: Response, next: NextFunction
   }
 };
 
-// TODO: Implement refreshToken function
 export const refreshToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // TODO: Verify refresh token
-    // TODO: Generate new access token
-    // TODO: Return new token
-    res.json({ message: 'Refresh token - TODO: Implement' });
-  } catch (error) {
-    next(error);
+    const { refreshToken: token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ message: 'Refresh token requis' });
+    }
+
+    // Verify refresh token
+    const payload = verifyToken(token, true);
+
+    // Generate new access token
+    const { generateTokens } = await import('../utils/jwt');
+    const { accessToken } = generateTokens({
+      id: payload.id,
+      email: payload.email,
+      role: payload.role,
+      organizationId: payload.organizationId,
+    });
+
+    res.json({ accessToken });
+  } catch (error: any) {
+    return res.status(401).json({ message: 'Token invalide ou expiré' });
   }
 };
 

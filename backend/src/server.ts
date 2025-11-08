@@ -23,8 +23,9 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// TODO: Import and mount routes
-// import authRoutes from './routes/auth';
+// Import and mount routes
+import authRoutes from './routes/auth';
+// TODO: Import other routes
 // import projectRoutes from './routes/projects';
 // import ticketRoutes from './routes/tickets';
 // import invoiceRoutes from './routes/invoices';
@@ -33,7 +34,8 @@ app.get('/health', (req, res) => {
 // import analyticsRoutes from './routes/analytics';
 // import adminRoutes from './routes/admin';
 
-// app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRoutes);
+// TODO: Mount other routes
 // app.use('/api/projects', projectRoutes);
 // app.use('/api/tickets', ticketRoutes);
 // app.use('/api/invoices', invoiceRoutes);

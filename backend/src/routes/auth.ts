@@ -1,25 +1,30 @@
 import { Router } from 'express';
-// TODO: Import controllers
-// import { register, login, logout, refreshToken, forgotPassword, resetPassword, googleAuth } from '../controllers/authController';
-// TODO: Import validators
-// import { validateRegister, validateLogin } from '../validators/authValidator';
-// import { authenticate } from '../middleware/auth';
+import {
+  register,
+  login,
+  logout,
+  refreshToken,
+  forgotPassword,
+  resetPassword,
+  googleAuth,
+} from '../controllers/authController';
+import { authenticate } from '../middleware/auth';
 
 const router = Router();
 
-// TODO: Implement routes
-// POST /api/auth/register
-// POST /api/auth/login
-// POST /api/auth/logout
-// POST /api/auth/refresh-token
-// POST /api/auth/forgot-password
-// POST /api/auth/reset-password
-// GET /api/auth/google
-// GET /api/auth/google/callback
+// Public routes
+router.post('/register', register);
+router.post('/login', login);
+router.post('/refresh', refreshToken);
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 
-router.get('/health', (req, res) => {
-  res.json({ message: 'Auth routes - TODO: Implement' });
-});
+// Protected routes
+router.post('/logout', authenticate, logout);
+
+// OAuth routes
+router.get('/google', googleAuth);
+router.get('/google/callback', googleAuth);
 
 export default router;
 
