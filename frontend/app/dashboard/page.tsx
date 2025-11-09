@@ -22,6 +22,9 @@ export default function DashboardPage() {
                   </p>
                   <p className="text-xs text-gray-500">{user?.email}</p>
                 </div>
+                <Button variant="secondary" onClick={() => window.location.href = '/settings'}>
+                  Paramètres
+                </Button>
                 <Button variant="secondary" onClick={logout}>
                   Déconnexion
                 </Button>

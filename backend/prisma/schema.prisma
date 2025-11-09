@@ -22,22 +22,25 @@ model User {
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id])
   subscription   Subscription?
-  
+
   // Profile
   firstName      String?
   lastName       String?
   avatar         String?
-  
+  phoneNumber    String?
+
   // Auth
   googleId       String?      @unique
   emailVerified  Boolean      @default(false)
   resetPasswordToken String?
   resetPasswordExpires DateTime?
-  
+  twoFactorEnabled Boolean    @default(false)
+  twoFactorSecret  String?
+
   // Analytics
   lastLogin      DateTime?
   sessionCount   Int          @default(0)
-  
+
   // Relations
   projects       ProjectMember[]
   createdProjects Project[]   @relation("ProjectCreator")
@@ -45,7 +48,9 @@ model User {
   assignedTickets TicketAssignee[]
   supportTickets SupportTicket[]
   analytics      UserAnalytics?
-  
+  settings       UserSettings?
+  sessions       UserSession[]
+
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -66,7 +71,8 @@ model Organization {
   type        OrganizationType @default(agency)
   users       User[]
   projects    Project[]
-  
+  settings    OrganizationSettings?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -416,16 +422,112 @@ model UserAnalytics {
   id            String   @id @default(cuid())
   userId        String   @unique
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   // Usage stats
   loginCount    Int      @default(0)
   lastLogin     DateTime?
   sessionDuration Int    @default(0) // total in minutes
   featuresUsed  Json     @default("{}")
-  
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@index([userId])
+}
+
+// ============================================
+// Settings Models
+// ============================================
+
+model UserSettings {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Preferences
+  language           String   @default("fr")
+  timezone           String   @default("Europe/Paris")
+  theme              String   @default("system") // light, dark, system
+
+  // Features modules activation
+  enableQuotes       Boolean  @default(true)
+  enableTimeline     Boolean  @default(false)
+  enableDrive        Boolean  @default(true)
+  enableClientLink   Boolean  @default(true)
+  enableAnalytics    Boolean  @default(false)
+  enableTimeTracking Boolean  @default(true)
+
+  // Notifications
+  notificationsEmail Boolean  @default(true)
+  notificationsInApp Boolean  @default(true)
+  notificationsPush  Boolean  @default(false)
+
+  // Notification preferences
+  notifyOnTicketAssignment Boolean @default(true)
+  notifyOnComment          Boolean @default(true)
+  notifyOnStatusChange     Boolean @default(true)
+  notifyOnInvoice          Boolean @default(true)
+  notifyOnPaymentFailed    Boolean @default(true)
+  weeklyDigest             Boolean @default(false)
+
+  // Billing preferences
+  billingDisplayMode String  @default("HT") // HT or TTC
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model UserSession {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Session info
+  device      String?
+  browser     String?
+  ipAddress   String?
+  userAgent   String?
+
+  // Dates
+  loginAt     DateTime @default(now())
+  lastActiveAt DateTime @default(now())
+  logoutAt    DateTime?
+
+  // Token
+  token       String   @unique
+  expiresAt   DateTime
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([token])
+}
+
+model OrganizationSettings {
+  id                 String       @id @default(cuid())
+  organizationId     String       @unique
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Branding
+  logo               String?
+  primaryColor       String?
+
+  // Policies
+  require2FA         Boolean      @default(false)
+  requireStrongPassword Boolean   @default(true)
+
+  // Features
+  enableTimeline     Boolean      @default(true)
+  enableAnalytics    Boolean      @default(false)
+  enableDrive        Boolean      @default(true)
+  enableIntegrations Boolean      @default(false)
+
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@index([organizationId])
 }
 

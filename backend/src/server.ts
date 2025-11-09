@@ -31,6 +31,7 @@ app.get('/health', (req, res) => {
 
 // Import and mount routes
 import authRoutes from './routes/auth';
+import settingsRoutes from './routes/settings';
 // TODO: Import other routes
 // import projectRoutes from './routes/projects';
 // import ticketRoutes from './routes/tickets';
@@ -41,6 +42,7 @@ import authRoutes from './routes/auth';
 // import adminRoutes from './routes/admin';
 
 app.use('/api/auth', authRoutes);
+app.use('/api/settings', settingsRoutes);
 // TODO: Mount other routes
 // app.use('/api/projects', projectRoutes);
 // app.use('/api/tickets', ticketRoutes);
