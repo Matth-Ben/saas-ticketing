@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 import { Button } from '@/components/ui/Button';
 
 export function ProfileSection() {
   const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -24,7 +26,6 @@ export function ProfileSection() {
   const [preferences, setPreferences] = useState({
     language: 'fr',
     timezone: 'Europe/Paris',
-    theme: 'system',
   });
 
   useEffect(() => {
@@ -58,8 +59,11 @@ export function ProfileSection() {
         setPreferences({
           language: settings.language || 'fr',
           timezone: settings.timezone || 'Europe/Paris',
-          theme: settings.theme || 'system',
         });
+        // Sync theme from backend
+        if (settings.theme) {
+          setTheme(settings.theme as 'light' | 'dark' | 'system');
+        }
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -114,7 +118,7 @@ export function ProfileSection() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(preferences),
+        body: JSON.stringify({ ...preferences, theme }),
       });
 
       if (response.ok) {
@@ -252,7 +256,9 @@ export function ProfileSection() {
       {message && (
         <div
           className={`p-4 rounded-md ${
-            message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+            message.type === 'success'
+              ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200'
+              : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200'
           }`}
         >
           {message.text}
@@ -261,7 +267,7 @@ export function ProfileSection() {
 
       {/* Avatar Upload */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Photo de profil</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Photo de profil</h3>
         <div className="flex items-center gap-6">
           <div className="relative">
             {avatar ? (
@@ -271,8 +277,8 @@ export function ProfileSection() {
                 className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
               />
             ) : (
-              <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center">
-                <span className="text-3xl text-gray-400">
+              <div className="w-24 h-24 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                <span className="text-3xl text-gray-400 dark:text-gray-300">
                   {user?.firstName?.[0] || user?.email?.[0] || '?'}
                 </span>
               </div>
@@ -318,12 +324,12 @@ export function ProfileSection() {
       </div>
 
       {/* Profile Information */}
-      <div className="border-t pt-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Informations personnelles</h3>
+      <div className="border-t dark:border-gray-700 pt-8">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Informations personnelles</h3>
         <form onSubmit={handleProfileSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Prénom
               </label>
               <input
@@ -331,12 +337,12 @@ export function ProfileSection() {
                 id="firstName"
                 value={formData.firstName}
                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-dark-card dark:text-gray-100"
               />
             </div>
 
             <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Nom
               </label>
               <input
@@ -344,13 +350,13 @@ export function ProfileSection() {
                 id="lastName"
                 value={formData.lastName}
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-dark-card dark:text-gray-100"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Email
             </label>
             <input
@@ -358,13 +364,13 @@ export function ProfileSection() {
               id="email"
               value={formData.email}
               disabled
-              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 cursor-not-allowed dark:text-gray-400"
             />
-            <p className="mt-1 text-sm text-gray-500">L'email ne peut pas être modifié</p>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">L'email ne peut pas être modifié</p>
           </div>
 
           <div>
-            <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Téléphone
             </label>
             <input
@@ -372,7 +378,7 @@ export function ProfileSection() {
               id="phoneNumber"
               value={formData.phoneNumber}
               onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-dark-card dark:text-gray-100"
             />
           </div>
 
@@ -385,18 +391,18 @@ export function ProfileSection() {
       </div>
 
       {/* Preferences */}
-      <div className="border-t pt-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Préférences</h3>
+      <div className="border-t dark:border-gray-700 pt-8">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Préférences</h3>
         <form onSubmit={handlePreferencesSubmit} className="space-y-4">
           <div>
-            <label htmlFor="language" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="language" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Langue
             </label>
             <select
               id="language"
               value={preferences.language}
               onChange={(e) => setPreferences({ ...preferences, language: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-dark-card dark:text-gray-100"
             >
               <option value="fr">Français</option>
               <option value="en">English</option>
@@ -404,14 +410,14 @@ export function ProfileSection() {
           </div>
 
           <div>
-            <label htmlFor="timezone" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="timezone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Fuseau horaire
             </label>
             <select
               id="timezone"
               value={preferences.timezone}
               onChange={(e) => setPreferences({ ...preferences, timezone: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-dark-card dark:text-gray-100"
             >
               <option value="Europe/Paris">Paris (UTC+1)</option>
               <option value="America/New_York">New York (UTC-5)</option>
@@ -421,14 +427,14 @@ export function ProfileSection() {
           </div>
 
           <div>
-            <label htmlFor="theme" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="theme" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Thème
             </label>
             <select
               id="theme"
-              value={preferences.theme}
-              onChange={(e) => setPreferences({ ...preferences, theme: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={theme}
+              onChange={(e) => setTheme(e.target.value as 'light' | 'dark' | 'system')}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-dark-card dark:text-gray-100"
             >
               <option value="light">Clair</option>
               <option value="dark">Sombre</option>
@@ -445,17 +451,17 @@ export function ProfileSection() {
       </div>
 
       {/* RGPD - Data Export */}
-      <div className="border-t pt-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Mes données personnelles (RGPD)</h3>
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+      <div className="border-t dark:border-gray-700 pt-8">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Mes données personnelles (RGPD)</h3>
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
           <div className="flex items-start gap-4">
             <div className="flex-1">
-              <h4 className="font-semibold text-gray-900 mb-2">Exporter mes données</h4>
-              <p className="text-sm text-gray-600 mb-4">
+              <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Exporter mes données</h4>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
                 Conformément au RGPD, vous pouvez télécharger une copie de toutes vos données personnelles stockées sur notre plateforme.
                 Cet export inclut :
               </p>
-              <ul className="text-sm text-gray-600 list-disc list-inside space-y-1 mb-4">
+              <ul className="text-sm text-gray-600 dark:text-gray-300 list-disc list-inside space-y-1 mb-4">
                 <li>Vos informations de profil</li>
                 <li>Vos paramètres et préférences</li>
                 <li>Vos projets et tickets</li>
