@@ -40,7 +40,7 @@ export function NotificationsSection() {
     setIsLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -74,7 +74,7 @@ export function NotificationsSection() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings/notifications`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/notifications`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

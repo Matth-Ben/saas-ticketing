@@ -6,7 +6,7 @@ export function BillingSection() {
   const openStripePortal = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/stripe/portal`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/stripe/portal`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

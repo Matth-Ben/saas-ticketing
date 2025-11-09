@@ -65,12 +65,11 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
   }
 };
 
-// TODO: Implement logout function
-export const logout = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const logout = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // TODO: Invalidate refresh token if using token blacklist
-    // TODO: Return success
-    res.json({ message: 'Logout - TODO: Implement' });
+    // Note: For now, logout is handled client-side by removing tokens
+    // TODO: Implement token blacklist/invalidation when needed
+    res.json({ message: 'Déconnexion réussie' });
   } catch (error) {
     next(error);
   }

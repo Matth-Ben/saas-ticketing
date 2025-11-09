@@ -27,7 +27,7 @@ export function OrganizationSection() {
   const fetchOrgSettings = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings/organization`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/organization`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -60,7 +60,7 @@ export function OrganizationSection() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings/organization`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/organization`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

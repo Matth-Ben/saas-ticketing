@@ -47,7 +47,7 @@ export function ProfileSection() {
     setIsLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -75,7 +75,7 @@ export function ProfileSection() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings/profile`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -108,7 +108,7 @@ export function ProfileSection() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings/preferences`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/preferences`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -155,7 +155,7 @@ export function ProfileSection() {
       const formData = new FormData();
       formData.append('avatar', file);
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings/avatar`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/avatar`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -187,7 +187,7 @@ export function ProfileSection() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings/avatar`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/avatar`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -212,7 +212,7 @@ export function ProfileSection() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings/export`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/export`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

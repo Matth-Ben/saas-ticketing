@@ -36,7 +36,7 @@ export function SecuritySection() {
   const fetchSessions = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings/sessions`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/sessions`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -69,7 +69,7 @@ export function SecuritySection() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings/password`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -107,7 +107,7 @@ export function SecuritySection() {
 
       try {
         const token = localStorage.getItem('accessToken');
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings/2fa`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/2fa`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -135,7 +135,7 @@ export function SecuritySection() {
 
       try {
         const token = localStorage.getItem('accessToken');
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings/2fa`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/2fa`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -173,7 +173,7 @@ export function SecuritySection() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings/2fa/verify`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/2fa/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -208,7 +208,7 @@ export function SecuritySection() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings/sessions`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/sessions`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

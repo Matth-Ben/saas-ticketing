@@ -85,7 +85,7 @@ export function FeaturesSection() {
     setIsLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -116,7 +116,7 @@ export function FeaturesSection() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings/features`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/features`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

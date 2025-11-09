@@ -20,8 +20,8 @@ router.post('/refresh', refreshToken);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 
-// Protected routes
-router.post('/logout', authenticate, logout);
+// Logout - no auth required (token may be expired/invalid)
+router.post('/logout', logout);
 
 // OAuth routes
 router.get('/google', googleAuth);
