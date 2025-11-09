@@ -1,8 +1,11 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 
 export function BillingSection() {
+  const router = useRouter();
+
   const openStripePortal = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -22,8 +25,34 @@ export function BillingSection() {
     }
   };
 
+  const goToPricing = () => {
+    router.push('/pricing');
+  };
+
   return (
     <div className="space-y-8">
+      {/* Current Plan */}
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Plan actuel</h3>
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-xl font-semibold text-gray-900">Essai gratuit</h4>
+              <p className="text-sm text-gray-600 mt-1">
+                Profitez de toutes les fonctionnalités pendant 15 jours
+              </p>
+              <p className="text-xs text-gray-500 mt-2">
+                Aucun paiement requis pendant la période d'essai
+              </p>
+            </div>
+            <Button onClick={goToPricing} variant="primary">
+              Choisir un plan
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Stripe Portal */}
       <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Facturation et abonnement</h3>
         <p className="text-gray-600 mb-6">
@@ -49,6 +78,7 @@ export function BillingSection() {
         </div>
       </div>
 
+      {/* Billing Preferences */}
       <div className="border-t pt-8">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Préférences de facturation</h3>
 

@@ -1,35 +1,138 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
-// TODO: Import Stripe
-// import Stripe from 'stripe';
-// TODO: Import services
-// import { stripeService } from '../services/stripeService';
+import Stripe from 'stripe';
+import { prisma } from '../utils/prisma';
+import { PLANS } from '../config/plans';
 
-// TODO: Initialize Stripe
-// const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2023-10-16' });
+// Initialize Stripe
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2024-11-20.acacia'
+});
 
-// TODO: Implement createCheckoutSession function
 export const createCheckoutSession = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    // TODO: Get plan and billing period from body
-    // TODO: Get user from request
-    // TODO: Create or get Stripe customer
-    // TODO: Create checkout session with trial period (15 days)
-    // TODO: Return session URL
-    res.json({ message: 'Create checkout session - TODO: Implement' });
+    const userId = req.user!.id;
+    const { planId, billingPeriod } = req.body as { planId: string; billingPeriod: 'month' | 'year' };
+
+    // Validate plan
+    const plan = PLANS[planId];
+    if (!plan) {
+      return res.status(400).json({ message: 'Plan invalide' });
+    }
+
+    // Validate billing period
+    if (billingPeriod !== 'month' && billingPeriod !== 'year') {
+      return res.status(400).json({ message: 'Période de facturation invalide' });
+    }
+
+    // Get user
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { stripeCustomerId: true, email: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+
+    // Create or get Stripe customer
+    let customerId = user.stripeCustomerId;
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: user.email,
+        metadata: { userId },
+      });
+      customerId = customer.id;
+
+      // Update user with Stripe customer ID
+      await prisma.user.update({
+        where: { id: userId },
+        data: { stripeCustomerId: customerId },
+      });
+    }
+
+    // Calculate price
+    const unitAmount = billingPeriod === 'month' ? plan.priceMonthly : plan.priceYearly;
+
+    // Create Stripe checkout session
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency: 'eur',
+            product_data: {
+              name: `${plan.name} - ${billingPeriod === 'month' ? 'Mensuel' : 'Annuel'}`,
+              description: plan.description,
+            },
+            unit_amount: unitAmount,
+            recurring: {
+              interval: billingPeriod,
+            },
+          },
+          quantity: 1,
+        },
+      ],
+      subscription_data: {
+        trial_period_days: 15, // 15 jours d'essai gratuit
+        metadata: {
+          userId,
+          planId,
+        },
+      },
+      success_url: `${process.env.CORS_ORIGIN}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.CORS_ORIGIN}/pricing`,
+      metadata: {
+        userId,
+        planId,
+      },
+    });
+
+    res.json({ url: session.url });
   } catch (error) {
     next(error);
   }
 };
 
-// TODO: Implement createPortalSession function
 export const createPortalSession = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    // TODO: Get user from request
-    // TODO: Get Stripe customer ID
-    // TODO: Create billing portal session
-    // TODO: Return portal URL
-    res.json({ message: 'Create portal session - TODO: Implement' });
+    const userId = req.user!.id;
+
+    // Get user with Stripe customer ID
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { stripeCustomerId: true, email: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+
+    // If user doesn't have a Stripe customer ID, create one
+    let customerId = user.stripeCustomerId;
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: user.email,
+        metadata: { userId },
+      });
+      customerId = customer.id;
+
+      // Update user with Stripe customer ID
+      await prisma.user.update({
+        where: { id: userId },
+        data: { stripeCustomerId: customerId },
+      });
+    }
+
+    // Create billing portal session
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: `${process.env.CORS_ORIGIN}/settings?tab=billing`,
+    });
+
+    res.json({ url: session.url });
   } catch (error) {
     next(error);
   }

@@ -36,22 +36,22 @@ app.get('/health', (req, res) => {
 // Import and mount routes
 import authRoutes from './routes/auth';
 import settingsRoutes from './routes/settings';
+import stripeRoutes from './routes/stripe';
 // TODO: Import other routes
 // import projectRoutes from './routes/projects';
 // import ticketRoutes from './routes/tickets';
 // import invoiceRoutes from './routes/invoices';
-// import stripeRoutes from './routes/stripe';
 // import supportRoutes from './routes/support';
 // import analyticsRoutes from './routes/analytics';
 // import adminRoutes from './routes/admin';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/stripe', stripeRoutes);
 // TODO: Mount other routes
 // app.use('/api/projects', projectRoutes);
 // app.use('/api/tickets', ticketRoutes);
 // app.use('/api/invoices', invoiceRoutes);
-// app.use('/api/stripe', stripeRoutes);
 // app.use('/api/support', supportRoutes);
 // app.use('/api/analytics', analyticsRoutes);
 // app.use('/api/admin', adminRoutes);
