@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
+import passport from 'passport';
 import { AuthRequest } from '../middleware/auth';
 import { authService } from '../services/authService';
-import { verifyToken } from '../utils/jwt';
+import { verifyToken, generateTokens } from '../utils/jwt';
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -128,16 +129,38 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
   }
 };
 
-// TODO: Implement googleAuth function
-export const googleAuth = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    // TODO: Handle Google OAuth callback
-    // TODO: Create or find user
-    // TODO: Generate JWT tokens
-    // TODO: Return user and tokens
-    res.json({ message: 'Google auth - TODO: Implement' });
-  } catch (error) {
-    next(error);
-  }
+// Initiate Google OAuth flow
+export const googleAuth = passport.authenticate('google', {
+  scope: ['profile', 'email'],
+  session: false,
+});
+
+// Handle Google OAuth callback
+export const googleAuthCallback = (req: Request, res: Response, next: NextFunction) => {
+  passport.authenticate('google', { session: false }, (err: any, user: any) => {
+    if (err || !user) {
+      // Redirect to frontend with error
+      const frontendUrl = process.env.CORS_ORIGIN || 'http://localhost:3000';
+      return res.redirect(`${frontendUrl}/auth/login?error=google_auth_failed`);
+    }
+
+    try {
+      // Generate JWT tokens
+      const tokens = generateTokens({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        organizationId: user.organizationId || undefined,
+      });
+
+      // Redirect to frontend with tokens
+      const frontendUrl = process.env.CORS_ORIGIN || 'http://localhost:3000';
+      const redirectUrl = `${frontendUrl}/auth/callback?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`;
+
+      res.redirect(redirectUrl);
+    } catch (error) {
+      next(error);
+    }
+  })(req, res, next);
 };
 

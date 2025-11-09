@@ -7,6 +7,7 @@ import {
   forgotPassword,
   resetPassword,
   googleAuth,
+  googleAuthCallback,
 } from '../controllers/authController';
 import { authenticate } from '../middleware/auth';
 
@@ -24,7 +25,7 @@ router.post('/logout', authenticate, logout);
 
 // OAuth routes
 router.get('/google', googleAuth);
-router.get('/google/callback', googleAuth);
+router.get('/google/callback', googleAuthCallback);
 
 export default router;
 

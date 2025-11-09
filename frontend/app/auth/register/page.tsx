@@ -190,8 +190,7 @@ export default function RegisterPage() {
                 variant="secondary"
                 className="w-full flex items-center justify-center gap-2"
                 onClick={() => {
-                  // TODO: Implement Google OAuth
-                  alert('Google OAuth à implémenter');
+                  window.location.href = 'http://localhost:4000/api/auth/google';
                 }}
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
