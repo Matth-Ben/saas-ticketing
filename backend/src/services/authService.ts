@@ -51,6 +51,8 @@ export const authService = {
       id: user.id,
       email: user.email,
       role: user.role,
+      firstName: user.firstName || undefined,
+      lastName: user.lastName || undefined,
       organizationId: user.organizationId || undefined,
     });
 
@@ -93,6 +95,8 @@ export const authService = {
       id: user.id,
       email: user.email,
       role: user.role,
+      firstName: user.firstName || undefined,
+      lastName: user.lastName || undefined,
       organizationId: user.organizationId || undefined,
     });
 
@@ -115,6 +119,84 @@ export const authService = {
 
   async hashPassword(password: string): Promise<string> {
     return bcrypt.hash(password, 10);
+  },
+
+  async generateResetToken(): Promise<string> {
+    // Generate a random token
+    const crypto = require('crypto');
+    return crypto.randomBytes(32).toString('hex');
+  },
+
+  async requestPasswordReset(email: string): Promise<{ token: string; user: any }> {
+    // Find user by email
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      // Don't reveal if user exists or not (security best practice)
+      throw new Error('USER_NOT_FOUND');
+    }
+
+    // Generate reset token
+    const resetToken = await this.generateResetToken();
+
+    // Hash the token before storing (security best practice)
+    const hashedToken = await bcrypt.hash(resetToken, 10);
+
+    // Set token expiration (1 hour from now)
+    const resetPasswordExpires = new Date();
+    resetPasswordExpires.setHours(resetPasswordExpires.getHours() + 1);
+
+    // Update user with reset token
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires,
+      },
+    });
+
+    return { token: resetToken, user };
+  },
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    // Find users with non-expired reset tokens
+    const users = await prisma.user.findMany({
+      where: {
+        resetPasswordToken: { not: null },
+        resetPasswordExpires: { gte: new Date() },
+      },
+    });
+
+    // Find the user with matching token
+    let matchedUser = null;
+    for (const user of users) {
+      if (user.resetPasswordToken) {
+        const isValidToken = await bcrypt.compare(token, user.resetPasswordToken);
+        if (isValidToken) {
+          matchedUser = user;
+          break;
+        }
+      }
+    }
+
+    if (!matchedUser) {
+      throw new Error('Token invalide ou expiré');
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password and clear reset token
+    await prisma.user.update({
+      where: { id: matchedUser.id },
+      data: {
+        password: hashedPassword,
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
+      },
+    });
   },
 };
 

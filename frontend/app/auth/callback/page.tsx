@@ -33,6 +33,8 @@ export default function AuthCallbackPage() {
           id: payload.id,
           email: payload.email,
           role: payload.role,
+          firstName: payload.firstName,
+          lastName: payload.lastName,
         };
         localStorage.setItem('user', JSON.stringify(user));
 

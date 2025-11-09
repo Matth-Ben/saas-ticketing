@@ -102,29 +102,63 @@ export const refreshToken = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
-// TODO: Implement forgotPassword function
 export const forgotPassword = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // TODO: Find user by email
-    // TODO: Generate reset token
-    // TODO: Send email with reset link
-    // TODO: Return success (don't reveal if user exists)
-    res.json({ message: 'Forgot password - TODO: Implement' });
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email requis' });
+    }
+
+    try {
+      // Request password reset
+      const { token, user } = await authService.requestPasswordReset(email);
+
+      // Send email with reset link
+      const { emailService } = await import('../services/emailService');
+      await emailService.sendPasswordResetEmail(email, token);
+
+      // Always return success (don't reveal if user exists - security best practice)
+      res.json({
+        message: 'Si un compte existe avec cet email, vous recevrez un lien de réinitialisation'
+      });
+    } catch (error: any) {
+      // Even if user not found, return success message (security best practice)
+      if (error.message === 'USER_NOT_FOUND') {
+        return res.json({
+          message: 'Si un compte existe avec cet email, vous recevrez un lien de réinitialisation'
+        });
+      }
+      throw error;
+    }
   } catch (error) {
     next(error);
   }
 };
 
-// TODO: Implement resetPassword function
 export const resetPassword = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // TODO: Verify reset token
-    // TODO: Hash new password
-    // TODO: Update user password
-    // TODO: Invalidate reset token
-    // TODO: Return success
-    res.json({ message: 'Reset password - TODO: Implement' });
-  } catch (error) {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({ message: 'Token et mot de passe requis' });
+    }
+
+    // Validate password length
+    if (password.length < 8) {
+      return res.status(400).json({
+        message: 'Le mot de passe doit contenir au moins 8 caractères'
+      });
+    }
+
+    // Reset password
+    await authService.resetPassword(token, password);
+
+    res.json({ message: 'Mot de passe réinitialisé avec succès' });
+  } catch (error: any) {
+    if (error.message === 'Token invalide ou expiré') {
+      return res.status(400).json({ message: error.message });
+    }
     next(error);
   }
 };
@@ -150,6 +184,8 @@ export const googleAuthCallback = (req: Request, res: Response, next: NextFuncti
         id: user.id,
         email: user.email,
         role: user.role,
+        firstName: user.firstName || undefined,
+        lastName: user.lastName || undefined,
         organizationId: user.organizationId || undefined,
       });
 
