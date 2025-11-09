@@ -5,6 +5,7 @@ import {
   updatePreferences,
   updatePassword,
   toggle2FA,
+  verify2FA,
   getUserSessions,
   revokeAllSessions,
   updateNotifications,
@@ -12,8 +13,12 @@ import {
   deleteAccount,
   getOrganizationSettings,
   updateOrganizationSettings,
+  uploadAvatar as uploadAvatarController,
+  deleteAvatar,
+  exportUserData,
 } from '../controllers/settingsController';
 import { authenticate } from '../middleware/auth';
+import { uploadAvatar } from '../config/multer';
 
 const router = Router();
 
@@ -25,6 +30,8 @@ router.get('/', getUserSettings);
 
 // Profile
 router.put('/profile', updateProfile);
+router.post('/avatar', uploadAvatar.single('avatar'), uploadAvatarController);
+router.delete('/avatar', deleteAvatar);
 
 // Preferences
 router.put('/preferences', updatePreferences);
@@ -32,6 +39,7 @@ router.put('/preferences', updatePreferences);
 // Security
 router.put('/password', updatePassword);
 router.post('/2fa', toggle2FA);
+router.post('/2fa/verify', verify2FA);
 router.get('/sessions', getUserSessions);
 router.delete('/sessions', revokeAllSessions);
 
@@ -41,8 +49,9 @@ router.put('/notifications', updateNotifications);
 // Features
 router.put('/features', updateFeatures);
 
-// Account deletion
+// Account deletion and data export
 router.delete('/account', deleteAccount);
+router.get('/export', exportUserData);
 
 // Organization (Agency/Enterprise only)
 router.get('/organization', getOrganizationSettings);

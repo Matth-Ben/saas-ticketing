@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import passport from 'passport';
+import path from 'path';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
 import { configurePassport } from './config/passport';
@@ -23,6 +24,9 @@ app.use(express.urlencoded({ extended: true }));
 // Initialize Passport
 app.use(passport.initialize());
 configurePassport();
+
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check
 app.get('/health', (req, res) => {

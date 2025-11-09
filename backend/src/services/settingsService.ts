@@ -1,5 +1,6 @@
 import { prisma } from '../utils/prisma';
 import bcrypt from 'bcryptjs';
+import { twoFactorService } from './twoFactorService';
 
 export const settingsService = {
   // Get or create user settings
@@ -90,20 +91,38 @@ export const settingsService = {
   // Toggle 2FA
   async toggle2FA(userId: string, enable: boolean) {
     if (enable) {
-      // TODO: Generate 2FA secret using speakeasy or similar library
-      const secret = 'TEMPORARY_SECRET'; // Replace with actual secret generation
+      // Get user email for the 2FA secret
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true, twoFactorEnabled: true },
+      });
 
+      if (!user) {
+        throw new Error('Utilisateur non trouvé');
+      }
+
+      if (user.twoFactorEnabled) {
+        throw new Error('2FA déjà activé');
+      }
+
+      // Generate 2FA secret and QR code
+      const { secret, otpauthUrl } = twoFactorService.generateSecret(user.email);
+      const qrCode = await twoFactorService.generateQRCode(otpauthUrl);
+      const backupCodes = twoFactorService.generateBackupCodes();
+
+      // Store the secret (not enabled yet until user verifies)
       await prisma.user.update({
         where: { id: userId },
         data: {
-          twoFactorEnabled: true,
           twoFactorSecret: secret,
         },
       });
 
       return {
-        message: '2FA activé avec succès',
-        secret, // In production, return QR code data
+        message: 'Secret 2FA généré. Scannez le QR code et entrez le code pour activer.',
+        secret,
+        qrCode,
+        backupCodes,
       };
     } else {
       await prisma.user.update({
@@ -116,6 +135,39 @@ export const settingsService = {
 
       return { message: '2FA désactivé avec succès' };
     }
+  },
+
+  // Verify and enable 2FA
+  async verify2FA(userId: string, token: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { twoFactorSecret: true, twoFactorEnabled: true },
+    });
+
+    if (!user || !user.twoFactorSecret) {
+      throw new Error('2FA non configuré');
+    }
+
+    if (user.twoFactorEnabled) {
+      throw new Error('2FA déjà activé');
+    }
+
+    // Verify the token
+    const isValid = twoFactorService.verifyToken(user.twoFactorSecret, token);
+
+    if (!isValid) {
+      throw new Error('Code invalide');
+    }
+
+    // Enable 2FA
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        twoFactorEnabled: true,
+      },
+    });
+
+    return { message: '2FA activé avec succès' };
   },
 
   // Get user sessions
@@ -320,5 +372,62 @@ export const settingsService = {
     });
 
     return settings;
+  },
+
+  // Export user data (RGPD)
+  async exportUserData(userId: string) {
+    // Get all user data
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        settings: true,
+        subscription: true,
+        organization: true,
+        analytics: true,
+        projects: {
+          include: {
+            project: true,
+          },
+        },
+        createdProjects: {
+          include: {
+            members: true,
+            tickets: true,
+            invoices: true,
+            documents: true,
+          },
+        },
+        createdTickets: {
+          include: {
+            assignees: true,
+          },
+        },
+        assignedTickets: {
+          include: {
+            ticket: true,
+          },
+        },
+        supportTickets: {
+          include: {
+            comments: true,
+          },
+        },
+        sessions: true,
+      },
+    });
+
+    if (!user) {
+      throw new Error('Utilisateur non trouvé');
+    }
+
+    // Remove sensitive data
+    const { password, twoFactorSecret, resetPasswordToken, ...userData } = user;
+
+    // Format data for export
+    return {
+      exportDate: new Date().toISOString(),
+      user: userData,
+      notice: 'Cet export contient toutes vos données personnelles conformément au RGPD. Ces données sont sensibles et doivent être stockées en sécurité.',
+    };
   },
 };

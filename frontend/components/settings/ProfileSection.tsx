@@ -17,6 +17,10 @@ export function ProfileSection() {
     email: '',
   });
 
+  const [avatar, setAvatar] = useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
   const [preferences, setPreferences] = useState({
     language: 'fr',
     timezone: 'Europe/Paris',
@@ -31,6 +35,8 @@ export function ProfileSection() {
         phoneNumber: user.phoneNumber || '',
         email: user.email || '',
       });
+      // @ts-ignore - avatar might exist on user object
+      setAvatar(user.avatar || null);
     }
 
     // Load user settings
@@ -124,6 +130,118 @@ export function ProfileSection() {
     }
   };
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'Le fichier est trop volumineux (max 5MB)' });
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setMessage({ type: 'error', text: 'Type de fichier non supporté. Utilisez JPG, PNG, GIF ou WebP.' });
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    setMessage(null);
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings/avatar`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAvatar(data.avatarUrl);
+        setMessage({ type: 'success', text: 'Avatar mis à jour avec succès' });
+      } else {
+        const data = await response.json();
+        setMessage({ type: 'error', text: data.message || 'Erreur lors de l\'upload' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Erreur lors de l\'upload de l\'avatar' });
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleDeleteAvatar = async () => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer votre avatar ?')) {
+      return;
+    }
+
+    setMessage(null);
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings/avatar`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        setAvatar(null);
+        setMessage({ type: 'success', text: 'Avatar supprimé avec succès' });
+      } else {
+        const data = await response.json();
+        setMessage({ type: 'error', text: data.message || 'Erreur lors de la suppression' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Erreur lors de la suppression de l\'avatar' });
+    }
+  };
+
+  const handleExportData = async () => {
+    setIsExporting(true);
+    setMessage(null);
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings/export`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        // Get the data as blob
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `user-data-${Date.now()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        setMessage({ type: 'success', text: 'Données exportées avec succès' });
+      } else {
+        const data = await response.json();
+        setMessage({ type: 'error', text: data.message || 'Erreur lors de l\'export' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Erreur lors de l\'export des données' });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (isLoading) {
     return <div className="text-center py-8">Chargement...</div>;
   }
@@ -141,8 +259,66 @@ export function ProfileSection() {
         </div>
       )}
 
-      {/* Profile Information */}
+      {/* Avatar Upload */}
       <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Photo de profil</h3>
+        <div className="flex items-center gap-6">
+          <div className="relative">
+            {avatar ? (
+              <img
+                src={`${process.env.NEXT_PUBLIC_API_URL}${avatar}`}
+                alt="Avatar"
+                className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
+              />
+            ) : (
+              <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center">
+                <span className="text-3xl text-gray-400">
+                  {user?.firstName?.[0] || user?.email?.[0] || '?'}
+                </span>
+              </div>
+            )}
+            {isUploadingAvatar && (
+              <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                <div className="animate-spin h-6 w-6 border-2 border-white border-t-transparent rounded-full"></div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex-1">
+            <div className="flex gap-2">
+              <label className="cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                  disabled={isUploadingAvatar}
+                />
+                <span className="inline-flex px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                  {isUploadingAvatar ? 'Upload en cours...' : 'Changer la photo'}
+                </span>
+              </label>
+
+              {avatar && (
+                <Button
+                  type="button"
+                  variant="danger"
+                  onClick={handleDeleteAvatar}
+                  disabled={isUploadingAvatar}
+                >
+                  Supprimer
+                </Button>
+              )}
+            </div>
+            <p className="text-sm text-gray-500 mt-2">
+              JPG, PNG, GIF ou WebP. Max 5MB.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Profile Information */}
+      <div className="border-t pt-8">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Informations personnelles</h3>
         <form onSubmit={handleProfileSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -266,6 +442,33 @@ export function ProfileSection() {
             </Button>
           </div>
         </form>
+      </div>
+
+      {/* RGPD - Data Export */}
+      <div className="border-t pt-8">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Mes données personnelles (RGPD)</h3>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <div className="flex items-start gap-4">
+            <div className="flex-1">
+              <h4 className="font-semibold text-gray-900 mb-2">Exporter mes données</h4>
+              <p className="text-sm text-gray-600 mb-4">
+                Conformément au RGPD, vous pouvez télécharger une copie de toutes vos données personnelles stockées sur notre plateforme.
+                Cet export inclut :
+              </p>
+              <ul className="text-sm text-gray-600 list-disc list-inside space-y-1 mb-4">
+                <li>Vos informations de profil</li>
+                <li>Vos paramètres et préférences</li>
+                <li>Vos projets et tickets</li>
+                <li>Vos factures et devis</li>
+                <li>Vos documents</li>
+                <li>Votre historique d'activité</li>
+              </ul>
+              <Button onClick={handleExportData} isLoading={isExporting}>
+                {isExporting ? 'Export en cours...' : 'Télécharger mes données (JSON)'}
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,8 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { settingsService } from '../services/settingsService';
+import path from 'path';
+import fs from 'fs';
 
 // Get user settings
 export const getUserSettings = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -86,7 +88,31 @@ export const toggle2FA = async (req: AuthRequest, res: Response, next: NextFunct
     const result = await settingsService.toggle2FA(userId, enable);
 
     res.json(result);
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === '2FA déjà activé') {
+      return res.status(400).json({ message: error.message });
+    }
+    next(error);
+  }
+};
+
+// Verify 2FA code
+export const verify2FA = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ message: 'Code requis' });
+    }
+
+    const result = await settingsService.verify2FA(userId, token);
+
+    res.json(result);
+  } catch (error: any) {
+    if (error.message === 'Code invalide' || error.message === '2FA non configuré') {
+      return res.status(400).json({ message: error.message });
+    }
     next(error);
   }
 };
@@ -192,6 +218,85 @@ export const updateOrganizationSettings = async (req: AuthRequest, res: Response
     if (error.message === 'Not authorized') {
       return res.status(403).json({ message: 'Non autorisé' });
     }
+    next(error);
+  }
+};
+
+// Upload avatar
+export const uploadAvatar = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'Aucun fichier fourni' });
+    }
+
+    // Generate URL for the avatar
+    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+
+    // Update user avatar in database
+    const updatedUser = await settingsService.updateProfile(userId, {
+      avatar: avatarUrl,
+    });
+
+    res.json({
+      message: 'Avatar mis à jour avec succès',
+      avatarUrl,
+      user: updatedUser,
+    });
+  } catch (error) {
+    // Delete uploaded file if database update fails
+    if (req.file) {
+      const filePath = path.join(__dirname, '../../uploads/avatars', req.file.filename);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+    next(error);
+  }
+};
+
+// Delete avatar
+export const deleteAvatar = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+
+    // Get current avatar
+    const user = await settingsService.updateProfile(userId, {});
+
+    if (user.avatar) {
+      // Delete file from disk
+      const filename = path.basename(user.avatar);
+      const filePath = path.join(__dirname, '../../uploads/avatars', filename);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+
+    // Remove avatar from database
+    const updatedUser = await settingsService.updateProfile(userId, {
+      avatar: undefined,
+    });
+
+    res.json({ message: 'Avatar supprimé avec succès', user: updatedUser });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Export user data (RGPD)
+export const exportUserData = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+
+    const data = await settingsService.exportUserData(userId);
+
+    // Set headers for JSON download
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="user-data-${userId}-${Date.now()}.json"`);
+
+    res.json(data);
+  } catch (error) {
     next(error);
   }
 };

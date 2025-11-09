@@ -24,6 +24,10 @@ export function SecuritySection() {
   });
 
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
+  const [show2FASetup, setShow2FASetup] = useState(false);
+  const [qrCode, setQrCode] = useState<string>('');
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
+  const [verificationCode, setVerificationCode] = useState('');
 
   useEffect(() => {
     fetchSessions();
@@ -92,32 +96,103 @@ export function SecuritySection() {
   };
 
   const handleToggle2FA = async () => {
+    if (is2FAEnabled) {
+      // Disable 2FA
+      if (!confirm('Êtes-vous sûr de vouloir désactiver la 2FA ?')) {
+        return;
+      }
+
+      setIsLoading(true);
+      setMessage(null);
+
+      try {
+        const token = localStorage.getItem('accessToken');
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings/2fa`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ enable: false }),
+        });
+
+        if (response.ok) {
+          setIs2FAEnabled(false);
+          setMessage({ type: 'success', text: '2FA désactivé avec succès' });
+        } else {
+          const data = await response.json();
+          setMessage({ type: 'error', text: data.message || 'Erreur' });
+        }
+      } catch (error) {
+        setMessage({ type: 'error', text: 'Erreur lors de la désactivation de la 2FA' });
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      // Enable 2FA - show setup
+      setIsLoading(true);
+      setMessage(null);
+
+      try {
+        const token = localStorage.getItem('accessToken');
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings/2fa`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ enable: true }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setQrCode(data.qrCode);
+          setBackupCodes(data.backupCodes || []);
+          setShow2FASetup(true);
+          setMessage({ type: 'success', text: data.message });
+        } else {
+          const data = await response.json();
+          setMessage({ type: 'error', text: data.message || 'Erreur' });
+        }
+      } catch (error) {
+        setMessage({ type: 'error', text: 'Erreur lors de l\'activation de la 2FA' });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const handleVerify2FA = async () => {
+    if (!verificationCode) {
+      setMessage({ type: 'error', text: 'Veuillez entrer le code de vérification' });
+      return;
+    }
+
     setIsLoading(true);
     setMessage(null);
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings/2fa`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/settings/2fa/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ enable: !is2FAEnabled }),
+        body: JSON.stringify({ token: verificationCode }),
       });
 
       if (response.ok) {
-        setIs2FAEnabled(!is2FAEnabled);
-        setMessage({
-          type: 'success',
-          text: is2FAEnabled ? '2FA désactivé' : '2FA activé avec succès',
-        });
+        setIs2FAEnabled(true);
+        setShow2FASetup(false);
+        setVerificationCode('');
+        setMessage({ type: 'success', text: '2FA activé avec succès !' });
       } else {
         const data = await response.json();
-        setMessage({ type: 'error', text: data.message || 'Erreur' });
+        setMessage({ type: 'error', text: data.message || 'Code invalide' });
       }
     } catch (error) {
-      setMessage({ type: 'error', text: 'Erreur lors de la modification de la 2FA' });
+      setMessage({ type: 'error', text: 'Erreur lors de la vérification' });
     } finally {
       setIsLoading(false);
     }
@@ -226,21 +301,93 @@ export function SecuritySection() {
       {/* 2FA */}
       <div className="border-t pt-8">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Authentification à deux facteurs</h3>
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md">
-          <div>
-            <p className="font-medium text-gray-900">Double authentification (2FA)</p>
-            <p className="text-sm text-gray-600">
-              Ajoutez une couche de sécurité supplémentaire à votre compte
-            </p>
+
+        {!show2FASetup ? (
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-md">
+            <div>
+              <p className="font-medium text-gray-900">Double authentification (2FA)</p>
+              <p className="text-sm text-gray-600">
+                Ajoutez une couche de sécurité supplémentaire à votre compte
+              </p>
+              {is2FAEnabled && (
+                <p className="text-sm text-green-600 mt-1 font-medium">✓ Activé</p>
+              )}
+            </div>
+            <Button
+              onClick={handleToggle2FA}
+              variant={is2FAEnabled ? 'danger' : 'primary'}
+              isLoading={isLoading}
+            >
+              {is2FAEnabled ? 'Désactiver' : 'Activer'}
+            </Button>
           </div>
-          <Button
-            onClick={handleToggle2FA}
-            variant={is2FAEnabled ? 'danger' : 'primary'}
-            isLoading={isLoading}
-          >
-            {is2FAEnabled ? 'Désactiver' : 'Activer'}
-          </Button>
-        </div>
+        ) : (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <h4 className="font-semibold text-gray-900 mb-4">Configuration de la 2FA</h4>
+
+            {/* Step 1: QR Code */}
+            <div className="mb-6">
+              <p className="text-sm text-gray-700 mb-4">
+                <strong>Étape 1 :</strong> Scannez ce QR code avec votre application d'authentification (Google Authenticator, Authy, etc.)
+              </p>
+              {qrCode && (
+                <div className="flex justify-center bg-white p-4 rounded-lg border border-gray-200">
+                  <img src={qrCode} alt="QR Code 2FA" className="w-48 h-48" />
+                </div>
+              )}
+            </div>
+
+            {/* Step 2: Backup Codes */}
+            {backupCodes.length > 0 && (
+              <div className="mb-6">
+                <p className="text-sm text-gray-700 mb-3">
+                  <strong>Étape 2 :</strong> Sauvegardez ces codes de récupération dans un endroit sûr. Vous pourrez les utiliser si vous perdez l'accès à votre application d'authentification.
+                </p>
+                <div className="bg-white p-4 rounded-lg border border-gray-200">
+                  <div className="grid grid-cols-2 gap-2">
+                    {backupCodes.map((code, index) => (
+                      <code key={index} className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
+                        {code}
+                      </code>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Verify */}
+            <div className="mb-4">
+              <p className="text-sm text-gray-700 mb-3">
+                <strong>Étape 3 :</strong> Entrez le code à 6 chiffres généré par votre application pour vérifier
+              </p>
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="000000"
+                  maxLength={6}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-center text-2xl font-mono tracking-widest focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <Button onClick={handleVerify2FA} isLoading={isLoading}>
+                  Vérifier
+                </Button>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setShow2FASetup(false);
+                setQrCode('');
+                setBackupCodes([]);
+                setVerificationCode('');
+              }}
+              className="text-sm text-gray-600 hover:text-gray-800 underline"
+            >
+              Annuler
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Active Sessions */}
