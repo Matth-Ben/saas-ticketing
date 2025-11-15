@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
+import { settingsApi } from '@/lib/api/settings';
 
 interface FeatureSettings {
   enableQuotes: boolean;
@@ -84,24 +85,15 @@ export function FeaturesSection() {
   const fetchSettings = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+      const data = await settingsApi.getUserSettings();
+      setSettings({
+        enableQuotes: data.enableQuotes ?? true,
+        enableTimeline: data.enableTimeline ?? false,
+        enableDrive: data.enableDrive ?? true,
+        enableClientLink: data.enableClientLink ?? true,
+        enableAnalytics: data.enableAnalytics ?? false,
+        enableTimeTracking: data.enableTimeTracking ?? true,
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        setSettings({
-          enableQuotes: data.enableQuotes ?? true,
-          enableTimeline: data.enableTimeline ?? false,
-          enableDrive: data.enableDrive ?? true,
-          enableClientLink: data.enableClientLink ?? true,
-          enableAnalytics: data.enableAnalytics ?? false,
-          enableTimeTracking: data.enableTimeTracking ?? true,
-        });
-      }
     } catch (error) {
       console.error('Error fetching settings:', error);
     } finally {
@@ -115,24 +107,12 @@ export function FeaturesSection() {
     setMessage(null);
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/features`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(settings),
-      });
-
-      if (response.ok) {
-        setMessage({ type: 'success', text: 'Modules mis à jour avec succès' });
-      } else {
-        const data = await response.json();
-        setMessage({ type: 'error', text: data.message || 'Erreur lors de la mise à jour' });
-      }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Erreur lors de la mise à jour des modules' });
+      await settingsApi.updateFeatures(settings);
+      setMessage({ type: 'success', text: 'Modules mis à jour avec succès' });
+      // Reload settings to ensure they are up to date
+      await fetchSettings();
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.response?.data?.message || 'Erreur lors de la mise à jour des modules' });
     } finally {
       setIsSaving(false);
     }

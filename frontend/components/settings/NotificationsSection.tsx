@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
+import { settingsApi } from '@/lib/api/settings';
 
 interface NotificationSettings {
   notificationsEmail: boolean;
@@ -33,33 +34,25 @@ export function NotificationsSection() {
   });
 
   useEffect(() => {
+    // Only fetch when component mounts
     fetchSettings();
   }, []);
 
   const fetchSettings = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+      const data = await settingsApi.getUserSettings();
+      setSettings({
+        notificationsEmail: data.notificationsEmail ?? true,
+        notificationsInApp: data.notificationsInApp ?? true,
+        notificationsPush: data.notificationsPush ?? false,
+        notifyOnTicketAssignment: data.notifyOnTicketAssignment ?? true,
+        notifyOnComment: data.notifyOnComment ?? true,
+        notifyOnStatusChange: data.notifyOnStatusChange ?? true,
+        notifyOnInvoice: data.notifyOnInvoice ?? true,
+        notifyOnPaymentFailed: data.notifyOnPaymentFailed ?? true,
+        weeklyDigest: data.weeklyDigest ?? false,
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        setSettings({
-          notificationsEmail: data.notificationsEmail ?? true,
-          notificationsInApp: data.notificationsInApp ?? true,
-          notificationsPush: data.notificationsPush ?? false,
-          notifyOnTicketAssignment: data.notifyOnTicketAssignment ?? true,
-          notifyOnComment: data.notifyOnComment ?? true,
-          notifyOnStatusChange: data.notifyOnStatusChange ?? true,
-          notifyOnInvoice: data.notifyOnInvoice ?? true,
-          notifyOnPaymentFailed: data.notifyOnPaymentFailed ?? true,
-          weeklyDigest: data.weeklyDigest ?? false,
-        });
-      }
     } catch (error) {
       console.error('Error fetching settings:', error);
     } finally {
@@ -73,24 +66,12 @@ export function NotificationsSection() {
     setMessage(null);
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/notifications`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(settings),
-      });
-
-      if (response.ok) {
-        setMessage({ type: 'success', text: 'Préférences de notification mises à jour avec succès' });
-      } else {
-        const data = await response.json();
-        setMessage({ type: 'error', text: data.message || 'Erreur lors de la mise à jour' });
-      }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Erreur lors de la mise à jour des notifications' });
+      await settingsApi.updateNotifications(settings);
+      setMessage({ type: 'success', text: 'Préférences de notification mises à jour avec succès' });
+      // Reload settings to ensure they are up to date
+      await fetchSettings();
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.response?.data?.message || 'Erreur lors de la mise à jour des notifications' });
     } finally {
       setIsSaving(false);
     }

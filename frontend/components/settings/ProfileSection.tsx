@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Button } from '@/components/ui/Button';
+import { settingsApi } from '@/lib/api/settings';
 
 export function ProfileSection() {
   const { user } = useAuth();
@@ -38,32 +39,25 @@ export function ProfileSection() {
       });
       // @ts-ignore - avatar might exist on user object
       setAvatar(user.avatar || null);
-    }
 
-    // Load user settings
-    fetchSettings();
+      // Load user settings only when user is available
+      fetchSettings();
+    }
   }, [user]);
 
   const fetchSettings = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+      const settings = await settingsApi.getUserSettings();
+      console.log('Loaded settings from API:', settings);
+      setPreferences({
+        language: settings.language || 'fr',
+        timezone: settings.timezone || 'Europe/Paris',
       });
-
-      if (response.ok) {
-        const settings = await response.json();
-        setPreferences({
-          language: settings.language || 'fr',
-          timezone: settings.timezone || 'Europe/Paris',
-        });
-        // Sync theme from backend
-        if (settings.theme) {
-          setTheme(settings.theme as 'light' | 'dark' | 'system');
-        }
+      // Sync theme from backend
+      if (settings.theme) {
+        console.log('Setting theme to:', settings.theme);
+        setTheme(settings.theme as 'light' | 'dark' | 'system');
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -78,28 +72,25 @@ export function ProfileSection() {
     setMessage(null);
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/profile`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          phoneNumber: formData.phoneNumber,
-        }),
+      const updatedUser = await settingsApi.updateProfile({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phoneNumber: formData.phoneNumber,
       });
 
-      if (response.ok) {
-        setMessage({ type: 'success', text: 'Profil mis à jour avec succès' });
-      } else {
-        const data = await response.json();
-        setMessage({ type: 'error', text: data.message || 'Erreur lors de la mise à jour' });
-      }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Erreur lors de la mise à jour du profil' });
+      // Update localStorage with new user data
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const newUserData = {
+        ...currentUser,
+        firstName: updatedUser.user.firstName,
+        lastName: updatedUser.user.lastName,
+        phoneNumber: updatedUser.user.phoneNumber,
+      };
+      localStorage.setItem('user', JSON.stringify(newUserData));
+
+      setMessage({ type: 'success', text: 'Profil mis à jour avec succès' });
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.response?.data?.message || 'Erreur lors de la mise à jour du profil' });
     } finally {
       setIsSaving(false);
     }
@@ -111,24 +102,12 @@ export function ProfileSection() {
     setMessage(null);
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/preferences`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ ...preferences, theme }),
-      });
-
-      if (response.ok) {
-        setMessage({ type: 'success', text: 'Préférences mises à jour avec succès' });
-      } else {
-        const data = await response.json();
-        setMessage({ type: 'error', text: data.message || 'Erreur lors de la mise à jour' });
-      }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Erreur lors de la mise à jour des préférences' });
+      await settingsApi.updatePreferences({ ...preferences, theme });
+      setMessage({ type: 'success', text: 'Préférences mises à jour avec succès' });
+      // Reload settings to ensure they are up to date
+      await fetchSettings();
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.response?.data?.message || 'Erreur lors de la mise à jour des préférences' });
     } finally {
       setIsSaving(false);
     }
@@ -155,28 +134,11 @@ export function ProfileSection() {
     setMessage(null);
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const formData = new FormData();
-      formData.append('avatar', file);
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/avatar`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setAvatar(data.avatarUrl);
-        setMessage({ type: 'success', text: 'Avatar mis à jour avec succès' });
-      } else {
-        const data = await response.json();
-        setMessage({ type: 'error', text: data.message || 'Erreur lors de l\'upload' });
-      }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Erreur lors de l\'upload de l\'avatar' });
+      const data = await settingsApi.uploadAvatar(file);
+      setAvatar(data.avatarUrl);
+      setMessage({ type: 'success', text: 'Avatar mis à jour avec succès' });
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.response?.data?.message || 'Erreur lors de l\'upload de l\'avatar' });
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -190,23 +152,11 @@ export function ProfileSection() {
     setMessage(null);
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/avatar`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        setAvatar(null);
-        setMessage({ type: 'success', text: 'Avatar supprimé avec succès' });
-      } else {
-        const data = await response.json();
-        setMessage({ type: 'error', text: data.message || 'Erreur lors de la suppression' });
-      }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Erreur lors de la suppression de l\'avatar' });
+      await settingsApi.deleteAvatar();
+      setAvatar(null);
+      setMessage({ type: 'success', text: 'Avatar supprimé avec succès' });
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.response?.data?.message || 'Erreur lors de la suppression de l\'avatar' });
     }
   };
 
@@ -215,32 +165,19 @@ export function ProfileSection() {
     setMessage(null);
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/export`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const blob = await settingsApi.exportUserData();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `user-data-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
 
-      if (response.ok) {
-        // Get the data as blob
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `user-data-${Date.now()}.json`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-
-        setMessage({ type: 'success', text: 'Données exportées avec succès' });
-      } else {
-        const data = await response.json();
-        setMessage({ type: 'error', text: data.message || 'Erreur lors de l\'export' });
-      }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Erreur lors de l\'export des données' });
+      setMessage({ type: 'success', text: 'Données exportées avec succès' });
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.response?.data?.message || 'Erreur lors de l\'export des données' });
     } finally {
       setIsExporting(false);
     }

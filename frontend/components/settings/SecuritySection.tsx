@@ -2,15 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
-
-interface Session {
-  id: string;
-  device: string | null;
-  browser: string | null;
-  ipAddress: string | null;
-  loginAt: string;
-  lastActiveAt: string;
-}
+import { settingsApi, Session } from '@/lib/api/settings';
 
 export function SecuritySection() {
   const [isLoading, setIsLoading] = useState(false);
@@ -35,17 +27,8 @@ export function SecuritySection() {
 
   const fetchSessions = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/sessions`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setSessions(data);
-      }
+      const data = await settingsApi.getSessions();
+      setSessions(data);
     } catch (error) {
       console.error('Error fetching sessions:', error);
     }
@@ -68,28 +51,14 @@ export function SecuritySection() {
     setIsLoading(true);
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/password`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          currentPassword: passwordForm.currentPassword,
-          newPassword: passwordForm.newPassword,
-        }),
+      await settingsApi.updatePassword({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
       });
-
-      if (response.ok) {
-        setMessage({ type: 'success', text: 'Mot de passe mis à jour avec succès' });
-        setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      } else {
-        const data = await response.json();
-        setMessage({ type: 'error', text: data.message || 'Erreur lors de la mise à jour' });
-      }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Erreur lors de la mise à jour du mot de passe' });
+      setMessage({ type: 'success', text: 'Mot de passe mis à jour avec succès' });
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.response?.data?.message || 'Erreur lors de la mise à jour du mot de passe' });
     } finally {
       setIsLoading(false);
     }
@@ -106,25 +75,11 @@ export function SecuritySection() {
       setMessage(null);
 
       try {
-        const token = localStorage.getItem('accessToken');
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/2fa`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({ enable: false }),
-        });
-
-        if (response.ok) {
-          setIs2FAEnabled(false);
-          setMessage({ type: 'success', text: '2FA désactivé avec succès' });
-        } else {
-          const data = await response.json();
-          setMessage({ type: 'error', text: data.message || 'Erreur' });
-        }
-      } catch (error) {
-        setMessage({ type: 'error', text: 'Erreur lors de la désactivation de la 2FA' });
+        await settingsApi.toggle2FA(false);
+        setIs2FAEnabled(false);
+        setMessage({ type: 'success', text: '2FA désactivé avec succès' });
+      } catch (error: any) {
+        setMessage({ type: 'error', text: error.response?.data?.message || 'Erreur lors de la désactivation de la 2FA' });
       } finally {
         setIsLoading(false);
       }
@@ -134,28 +89,13 @@ export function SecuritySection() {
       setMessage(null);
 
       try {
-        const token = localStorage.getItem('accessToken');
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/2fa`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({ enable: true }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setQrCode(data.qrCode);
-          setBackupCodes(data.backupCodes || []);
-          setShow2FASetup(true);
-          setMessage({ type: 'success', text: data.message });
-        } else {
-          const data = await response.json();
-          setMessage({ type: 'error', text: data.message || 'Erreur' });
-        }
-      } catch (error) {
-        setMessage({ type: 'error', text: 'Erreur lors de l\'activation de la 2FA' });
+        const data = await settingsApi.toggle2FA(true);
+        setQrCode(data.qrCode);
+        setBackupCodes(data.backupCodes || []);
+        setShow2FASetup(true);
+        setMessage({ type: 'success', text: data.message });
+      } catch (error: any) {
+        setMessage({ type: 'error', text: error.response?.data?.message || 'Erreur lors de l\'activation de la 2FA' });
       } finally {
         setIsLoading(false);
       }
@@ -172,27 +112,13 @@ export function SecuritySection() {
     setMessage(null);
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/2fa/verify`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ token: verificationCode }),
-      });
-
-      if (response.ok) {
-        setIs2FAEnabled(true);
-        setShow2FASetup(false);
-        setVerificationCode('');
-        setMessage({ type: 'success', text: '2FA activé avec succès !' });
-      } else {
-        const data = await response.json();
-        setMessage({ type: 'error', text: data.message || 'Code invalide' });
-      }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Erreur lors de la vérification' });
+      await settingsApi.verify2FA(verificationCode);
+      setIs2FAEnabled(true);
+      setShow2FASetup(false);
+      setVerificationCode('');
+      setMessage({ type: 'success', text: '2FA activé avec succès !' });
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.response?.data?.message || 'Erreur lors de la vérification' });
     } finally {
       setIsLoading(false);
     }
@@ -207,23 +133,11 @@ export function SecuritySection() {
     setMessage(null);
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/sessions`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        setMessage({ type: 'success', text: 'Toutes les sessions ont été révoquées' });
-        setSessions([]);
-      } else {
-        const data = await response.json();
-        setMessage({ type: 'error', text: data.message || 'Erreur' });
-      }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Erreur lors de la révocation des sessions' });
+      await settingsApi.revokeAllSessions();
+      setMessage({ type: 'success', text: 'Toutes les sessions ont été révoquées' });
+      setSessions([]);
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.response?.data?.message || 'Erreur lors de la révocation des sessions' });
     } finally {
       setIsLoading(false);
     }
